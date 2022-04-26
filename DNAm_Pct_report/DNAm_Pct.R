@@ -1,12 +1,32 @@
-#DNAm_report_script v6
-#Retrieve the script dir ----
+# --------------------------------------------
+#
+# DNAm_Pct.R
+# Convert command-line options as R arguments, retrieve absolute paths 
+#   and render the DNAm_Pct_report.Rmd file.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Retrieve the script dir
+# # Loading arguments
+# # Print arguments
+# # Get samples names to define html filename
+# # Retrieve absolute paths
+# # Render Rmd
+#
+# --------------------------------------------
+
+# Retrieve the script dir ----
 args <- commandArgs()
 dirScript <- dirname(gsub(args[ grep(args, pattern = "--file") ],
                           pattern = "--file=", replacement = ""))
 if(length(dirScript)==0){ dirScript="." }
 #if(length(dirScript)==1){ setwd(dirScript) }
 
-#Loading arguments----
+# Loading arguments----
 library(optparse)
 option_list = list(
   make_option(c("-s", "--samples_path"), type="character",
@@ -71,7 +91,7 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list)
 parameters = parse_args(opt_parser);
 
-#Print arguments----
+# Print arguments----
 print(paste("Launching Report generation with following args:",
              "-sp", parameters$samples_path,
              "-sitc", parameters$samples_id_to_check,
@@ -86,7 +106,7 @@ print(paste("Launching Report generation with following args:",
             sep=" "
              ))
 
-#Get samples for html filename --------------------------------
+# Get samples names to define html filename --------------------------------
 samplesPath <- unlist(strsplit(parameters$samples_path, split = ","))
 if(length(samplesPath) > 1){
   samples = read.csv(samplesPath[1], row.names = 1, header=TRUE, nrows = 1)
@@ -108,10 +128,9 @@ if(ncol(samples) > 10){ stop("Error: too many samples have been provided/selecte
 if(any(duplicated(colnames(samples)))){ stop("Error: Some samples are duplicated in the data provided. Each sample id must be unique.") }
 
 samplesFileBasename <- paste0(colnames(samples), collapse = "__") 
-htmlOutputName <- paste0("/", samplesFileBasename, "_MethPctAnalysis.html")
+htmlOutputName <- paste0(samplesFileBasename, "_MethPctAnalysis.html")
 
-#Render Rmd --------------------------------
-library(rmarkdown)
+# Retrieve absolute paths --------------------------------
 outputDir_path_abs <- normalizePath(parameters$outputDir_path)
 
 samples_path_abs <- unlist(strsplit(parameters$samples_path, split = ","))
@@ -127,7 +146,9 @@ annot_cgi_abs <- normalizePath(parameters$annot_cgi)
 annot_gene_abs <- normalizePath(parameters$annot_gene)
 annot_repeats_abs <- normalizePath(parameters$annot_repeats)
 
-render(input = paste0(dirScript,"/DNAm_Pct_report.Rmd"),
+# Render Rmd --------------------------------
+library(rmarkdown)
+render(input = file.path(dirScript,"DNAm_Pct_report.Rmd"),
        params = list(samples_path = samples_path_abs,
                      samples_id_to_check = parameters$samples_id_to_check,
                      control_path = control_path_abs,
@@ -141,6 +162,6 @@ render(input = paste0(dirScript,"/DNAm_Pct_report.Rmd"),
                      annot_cgi = annot_cgi_abs,
                      annot_gene = annot_gene_abs,
                      annot_repeats = annot_repeats_abs),
-       output_file = paste0(outputDir_path_abs, htmlOutputName)
+       output_file = file.path(outputDir_path_abs, htmlOutputName)
        )
 

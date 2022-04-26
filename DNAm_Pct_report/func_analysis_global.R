@@ -1,5 +1,21 @@
-
-
+# --------------------------------------------
+#
+# func_analysis_global.R
+# Contains the functions (from the DNAm_Pct_report.Rmd) used to 
+#   generate the information table and the manhattan plot data.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Functions:
+# # Infos Tables
+#   generate_info_dataframe
+# # Manhattan plot
+#   get_list_for_manhanttan_plot
+#
+# --------------------------------------------
 
 #######################################
 # Infos Tables

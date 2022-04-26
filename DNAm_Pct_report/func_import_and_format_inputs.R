@@ -1,7 +1,34 @@
+# --------------------------------------------
+#
+# func_import_and_format_inputs.R
+# Contains the functions (from the DNAm_Pct_report.Rmd) used to 
+#   import and convert the input files.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Functions:
+# # General
+#   import_and_concatenate
+# # Sample files
+#   import_meth_samples
+# # Control population file
+#   import_meth_control
+# # Regions file
+#   split_regions_to_long_format
+#   import_all_regions
+#   combine_groups_by_region
+#   prepare_regions_to_analyze
+#   get_probes_per_region
+#   get_regions_with_probes
+#
+# --------------------------------------------
 
 
 #######################################
-# Sample files
+# General
 #######################################
 
 # ----
@@ -44,9 +71,9 @@ import_and_concatenate <- function(paths, separator = ",",
   return(data)
 }
 
-
-
-
+#######################################
+# Sample files
+#######################################
 
 # ----
 # Import, concatenate, filter and check sample files.

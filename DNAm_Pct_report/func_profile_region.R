@@ -1,4 +1,20 @@
-
+# --------------------------------------------
+#
+# func_profile_region.R
+# Contains the functions (from the DNAm_Pct_report.Rmd) used to 
+#   generate the methylation profile per region.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Functions:
+#   subset_dataset_based_on_region
+#   get_datalist_based_on_region
+#   plot_region_profile
+#
+# --------------------------------------------
 
 
 # ----
@@ -372,25 +388,26 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
   }
   
   # Functions to plot the genes annotation panel and its corresponding legend.
-  panel_genes_base <- function(annot_gene, chr_vec, start_vec, end_vec) {
+  panel_genes_base <- function(annot_gene, start_vec, end_vec) {
     if (nrow(annot_gene) == 0) {
       plot(
         x = c(start_vec, end_vec),
         y = c(0, 1),
-        xlab = chr_vec,
+        xlab = "", xaxt = "n",
         yaxt = "n", ylab = "Genes", pch = ""
       )
     } else {
       plot(
         x = c(start_vec, end_vec),
         y = c(0, nrow(annot_gene) + 1),
-        xlab = chr_vec,
+        xlab = "", xaxt = "n",
         yaxt = "n", ylab = "Genes", pch = ""
       )
       
       annot_gene <- annot_gene[order(annot_gene$start, annot_gene$end), ]
       rownames(annot_gene) <- NULL
       
+      #Represent genes
       new_end <- annot_gene$start[annot_gene$strand == "-"]
       new_start <- annot_gene$end[annot_gene$strand == "-"]
       annot_gene$start[annot_gene$strand == "-"] <- new_start
@@ -401,12 +418,51 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
         x1 = annot_gene$end,
         y0 = as.numeric(rownames(annot_gene)),
         y1 = as.numeric(rownames(annot_gene)),
-        lwd = 3, angle = 70, length = 0.04,
+        lwd = 3, angle = 70, length = 0.08,
         col = "darkblue"
       )
       
       annot_gene$start[annot_gene$strand == "-"] <- new_end
       annot_gene$end[annot_gene$strand == "-"] <- new_start
+      
+      #Represent exons
+      new_exon_end <- annot_gene$exonStarts[annot_gene$strand == "-"]
+      new_exon_start <- annot_gene$exonEnds[annot_gene$strand == "-"]
+      annot_gene$exonStarts[annot_gene$strand == "-"] <- new_exon_start
+      annot_gene$exonEnds[annot_gene$strand == "-"] <- new_exon_end
+      
+      exons <- annot_gene[, c("exonStarts", "exonEnds")]
+      exons$y <- as.numeric(rownames(exons))
+      
+      row_vec <- rep(
+        seq_len(nrow(exons)),
+        nchar(gsub("[^,]", "", exons$exonStarts))
+      )
+      
+      split_exon_starts <- unlist(strsplit(exons$exonStarts, split = ","))
+      split_exon_ends <- unlist(strsplit(exons$exonEnds, split = ","))
+      
+      exons <- exons[row_vec, ]
+      exons$exonStarts <- as.numeric(split_exon_starts)
+      exons$exonEnds <- as.numeric(split_exon_ends)
+      
+      arrows(
+        x0 = exons$exonStarts,
+        x1 = exons$exonEnds,
+        y0 = exons$y, y1 = exons$y,
+        lwd = 10, length = 0,
+        col = "darkblue"
+      )
+      arrows(
+        x0 = exons$exonStarts,
+        x1 = exons$exonEnds,
+        y0 = exons$y, y1 = exons$y,
+        lwd = 1, angle = 70, length = 0.1,
+        col = "white"
+      )
+      
+      annot_gene$exonStarts[annot_gene$strand == "-"] <- new_exon_end
+      annot_gene$exonEnds[annot_gene$strand == "-"] <- new_exon_start
     }
   }
   panel_genes_legend <- function(annot_gene) {
@@ -433,6 +489,22 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
     }
   }
   
+  # Function to plot the x-axis panel.
+  panel_x_axis <- function(chr_vec, start_vec, end_vec) {
+    
+    plot(
+      x = c(start_vec, end_vec),
+      y = c(0, 10), type = "n",
+      xlab = "", yaxs="i",
+      xaxt = "n", yaxt = "n", ylab = "", bty="n"
+    )
+    axis(1, at = pretty(c(start_vec, end_vec)), 
+         labels = pretty(c(start_vec, end_vec)), pos = 10)
+    text(labels = chr_vec, 
+         x = start_vec + (end_vec - start_vec)/2, 
+         y = 0,
+         adj = c(0.5, 0))
+  }
   
   
   # Save old plot parameters. ----
@@ -446,9 +518,10 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
     colnames(sample_meth_subset_with_pos)[4:ncol(sample_meth_subset_with_pos)]
   
   
-  # Create a layout for 10 panels (5 plots + 5 empty plots for legends) ----
-  layout(matrix(1:10, ncol = 2, nrow = 5, byrow = TRUE),
-         widths = c(0.8, 0.2), heights = c(0.55, 0.025, 0.025, 0.1, 0.25)
+  # Create a layout for 12 panels (5 plots + 5 empty plots for legends + 
+  #   2 empty plots for the x-axis) ----
+  layout(matrix(1:12, ncol = 2, nrow = 6, byrow = TRUE),
+         widths = c(0.8, 0.2), heights = c(0.55, 0.025, 0.025, 0.1, 0.20, 0.05)
   )
   
   
@@ -482,11 +555,18 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
   panel_regions_legend(regions_all_subset)
   
   
-  par(mar = c(4, 4.1, 0, 0.6)) # Adjust margins.
+  par(mar = c(0, 4.1, 0, 0.6)) # Adjust margins.
   # Plot 5th track ----
-  panel_genes_base(annot_gene, chr_vec, start_vec, end_vec)
-  par(mar = c(4, 0, 0, 0)) # Adjust margins.
+  panel_genes_base(annot_gene, start_vec, end_vec)
+  par(mar = c(0, 0, 0, 0)) # Adjust margins.
   panel_genes_legend(annot_gene)
+  
+  
+  par(mar = c(0, 4.1, 0, 0.6)) # Adjust margins.
+  # Plot x-axis legend ----
+  panel_x_axis(chr_vec, start_vec, end_vec)
+  par(mar = c(0, 0, 0, 0)) # Adjust margins.
+  plot.new() # Empty plot for empty space on the right of the x-axis.
   
   
   # Re-initialize layout and plot parameters. ----

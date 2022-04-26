@@ -1,4 +1,26 @@
 ---
+# --------------------------------------------
+#
+# DNAm_Pct_report.Rmd
+# Generate a report about DNA methylation Percentage distribution
+#   at the global level and in regions of interest defined by the user.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Setup Rmd
+# # Loading libraries and input files
+# # General information
+# # Methylation Percentage difference distribution per sample
+# # Methylation Percentage per region per sample
+# # Methylation Percentage difference per region
+# # Methylation Percentage profiles
+#
+# --------------------------------------------
+
 title: "DNA methylation Percentage distribution report"
 output: 
   html_document:
@@ -8,19 +30,19 @@ output:
     toc_depth: 3
 params:
   report_version: 0.8
-  samples_path: '../test_data/Samples_small.csv.gz'
-  samples_id_to_check: 'ZH1609094r1,ZH1712576ms2'
-  control_path: '../test_data/Control_population.csv.gz'
-  regions_path: '../test_data/regionsList_v1-2022_03_25.tsv,../test_data/fakeRegionsListForTests.tsv'
+  samples_path: !r file.path('..','test_data','Samples_small.csv.gz')
+  samples_id_to_check: 'ZH1609094r1,ZH1712576ms2,ZH2005406k1'
+  control_path: !r file.path('..','test_data','Control_population.csv.gz')
+  regions_path: !r paste(file.path('..','test_data','regionsList_v1-2022_03_25.tsv'),file.path('..','test_data','fakeRegionsListForTests.tsv'), sep=",")
   regions_group_to_check: "PHP,BWS,SRS"
-  regions_status: "High,Low,h,l"
+  regions_status: "High,Low,l"
   group_as_ctrls: "SRS"
   export_tables_graphs: TRUE
-  outputDir_path: '../ExampleOfReport/'
-  cpg_positions: './annot_rds_files/positions-probesEPIC-hg38.rds'
-  annot_cgi: './annot_rds_files/annotCGI-CpG-Islands-cpgIslandExt.rds'
-  annot_gene: './annot_rds_files/annotGene_NCBI-RefSeq_refGene.rds'
-  annot_repeats: './annot_rds_files/annotRepeats-RepeatMasker-rmsk.rds'
+  outputDir_path: !r file.path('..','ExampleOfReport')
+  cpg_positions: !r file.path('annot_rds_files','positions-probesEPIC-hg38.rds')
+  annot_cgi: !r file.path('annot_rds_files','annotCGI-CpG-Islands-cpgIslandExt.rds')
+  annot_gene: !r file.path('annot_rds_files','annotGene_NCBI-RefSeq_refGene.rds')
+  annot_repeats: !r file.path('annot_rds_files','annotRepeats-RepeatMasker-rmsk.rds')
 ---
 
 <!-- HTML tags to define some styles that can be used in this Rmd -->
@@ -151,14 +173,16 @@ regions_to_analyze <- get_regions_with_probes(regions_to_analyze, positions)
 # If required, prepare the directory/sub-directories for the exportation of
 #   graphs and plots. ----
 if (params$export_tables_graphs) {
-  dir_name <- paste0(
-    params$outputDir_path, "/",
-    paste0(colnames(sample_meth), collapse = "__"),
-    "_MethPctAnalysis"
+  dir_name <- file.path(
+    params$outputDir_path,
+    paste0(
+      paste0(colnames(sample_meth), collapse = "__"), 
+      "_MethPctAnalysis"
+      )
   )
   dir.create(dir_name)
-  dir.create(paste0(dir_name, "/", "MethPctPlot_wholeGenome"))
-  dir.create(paste0(dir_name, "/", "MethPctPlot_perRegion"))
+  dir.create(file.path(dir_name, "MethPctPlot_wholeGenome"))
+  dir.create(file.path(dir_name, "MethPctPlot_perRegion"))
 }
 ```
 
@@ -182,7 +206,7 @@ info_dataframe <- generate_info_dataframe(
 # If required, export (as a csv file) the dataframe with the general information about the analysis 
 if (params$export_tables_graphs) {
   write.csv(info_dataframe,
-    file = paste0(dir_name, "/", "generalInfoTable.csv"),
+    file = file.path(dir_name, "generalInfoTable.csv"),
     quote = TRUE, row.names = FALSE
   )
 }
@@ -265,10 +289,10 @@ if (!is.null(list_manhattan_plot)) {
     # If required, export the manhattan plot
     if (params$export_tables_graphs) {
       dev.copy(pdf,
-        paste0(
-          dir_name, "/",
-          "MethPctPlot_wholeGenome", "/",
-          "MethPctPlot_wholeGenome_", name_sample, ".pdf"
+        file.path(
+          dir_name,
+          "MethPctPlot_wholeGenome",
+          paste0("MethPctPlot_wholeGenome_", name_sample, ".pdf")
         ),
         width = 10, height = 4
       )
@@ -303,8 +327,8 @@ boxplot_meth_distr_per_region(meth_pct_distrib_per_region)
 # If required, export the boxplot as a pdf file. ----
 if (params$export_tables_graphs) {
   dev.copy(pdf,
-    paste0(
-      dir_name, "/",
+    file.path(
+      dir_name,
       "MethPctPlot_perRegion_perSample.pdf"
     ),
     width = 10, height = 4
@@ -348,7 +372,7 @@ print_methdiff_formatted_table(regions_with_methpct,
 # export table?----
 if (params$export_tables_graphs) {
   write.csv(regions_with_methpct,
-    file = paste0(dir_name, "/", "MethPctDifference_perRegion_Table.csv"),
+    file = file.path(dir_name, "MethPctDifference_perRegion_Table.csv"),
     quote = TRUE, row.names = FALSE
   )
 }
@@ -361,6 +385,7 @@ if (params$export_tables_graphs) {
 # Methylation Percentage profiles
 <!-- Loop to generate a profile plot for each selected region inside a new sub-section and, if required, directly export each plot as a pdf file. -->
 ```{r profile_plots_and_export, echo=FALSE, fig.height=8, fig.width=10, results = 'asis', message=FALSE}
+source("func_profile_region.R")
 
 # ----
 # Loop for each region: plot a profile plot for each region inside a new
@@ -403,25 +428,25 @@ for (name_region in name_regions) {
 
 
 
-  # If required, export the profile plot ----
-  if (params$export_tables_graphs) {
-    name_region_corrected <-
-      gsub(
-        pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
-        replacement = "-",
-        x = name_region
-      )
-    dev.copy(pdf,
-      paste0(
-        dir_name, "/",
-        "MethPctPlot_perRegion", "/",
-        "MethPctPlot_", name_region_corrected, ".pdf"
-      ),
-      width = 10, height = 6
-    )
-    tmp_var <- dev.off()
-    rm(tmp_var)
-  }
+  # # If required, export the profile plot ----
+  # if (params$export_tables_graphs) {
+  #   name_region_corrected <-
+  #     gsub(
+  #       pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
+  #       replacement = "-",
+  #       x = name_region
+  #     )
+  #   dev.copy(pdf,
+  #     file.path(
+  #       dir_name,
+  #       "MethPctPlot_perRegion",
+  #       paste0("MethPctPlot_", name_region_corrected, ".pdf")
+  #     ),
+  #     width = 10, height = 6
+  #   )
+  #   tmp_var <- dev.off()
+  #   rm(tmp_var)
+  # }
 
 
   # ----

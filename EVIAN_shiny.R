@@ -1,4 +1,22 @@
-#DNAm analysis shiny application v2
+# --------------------------------------------
+#
+# EVIAN_shiny.R
+# Generate an interface to return command lines and launch additional tools.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Get/set current and scripts directories
+# # Loading libraries
+# # Define UI for app
+# # Define server to associate to the ui
+# # Compile, launch app and retrieve command to be launched
+#
+# --------------------------------------------
+
 #Get the current dir of the user----
 userCurrentDir <- getwd()
 
@@ -19,7 +37,7 @@ library(rmarkdown)
 library(waiter)
 
 
-# Define UI for data upload app ----
+# Define UI for app ----
 ui <- fluidPage(
   # Waiter and SweetAlert ui functions ----
   useWaiter(),
@@ -397,7 +415,7 @@ ui <- fluidPage(
 )
 # ----
 
-# Define server logic to read selected file ----
+# Define server to associate to the ui ----
 server <- function(input,output,session) {
   
   #Input retrieve and check file paths ----
@@ -726,7 +744,8 @@ server <- function(input,output,session) {
     #Generate command ---
     commandToExport(
       paste(
-        paste0('Rscript ', dirScript,'/DNAm_Pct_report/DNAm_Pct.R'),
+        "Rscript",
+        file.path(dirScript,'DNAm_Pct_report','DNAm_Pct.R'),
         cond1, cond2, cond3,
         cond4, cond5, cond6,
         cond7, cond8, cond9,
@@ -791,14 +810,13 @@ server <- function(input,output,session) {
 }
 # ----
 
+# Compile, launch app and retrieve command to be launched ----
+#compile app
 app <- shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))
-
+#run app / retrieve command
 commandToLaunch <- runApp(app)
-
 # window.close()
-
+#print command
 print(commandToLaunch)
-
+#launch command
 system(commandToLaunch)
-
-

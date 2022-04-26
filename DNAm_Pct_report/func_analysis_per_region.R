@@ -1,4 +1,23 @@
-
+# --------------------------------------------
+#
+# func_analysis_per_region.R
+# Contains the functions (from the DNAm_Pct_report.Rmd) used to 
+#   generate the boxplot and table about statistics per region.
+# Version 1.0
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Functions:
+# # Boxplot per region
+#   combine_datasets_for_boxplot
+#   boxplot_meth_distr_per_region
+# # Summary table per region
+#   get_region_mean_diff_dataset
+#   print_methdiff_formatted_table
+#
+# --------------------------------------------
 
 
 #######################################
