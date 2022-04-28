@@ -14,7 +14,7 @@
 #   combine_datasets_for_boxplot
 #   boxplot_meth_distr_per_region
 # # Summary table per region
-#   get_region_mean_diff_dataset
+#   get_region_median_diff_dataset
 #   print_methdiff_formatted_table
 #
 # --------------------------------------------
@@ -304,12 +304,95 @@ boxplot_meth_distr_per_region <- function(meth_distr_per_region) {
 
 
 
+
+# Check if boxplots should be split, generate the boxplots and if required, 
+#   export the boxplots as pdf files. ----
+# The dataset to provide must have the following format:
+# cpg_id  group           name      group_samples  meth_pct  as_ctrl_region
+# probe1  groupA; groupB  dmrName1  sample1        40.50000  TRUE
+# probe2  groupA; groupC  dmrName1  ctrl           52.05712  TRUE
+# Dependencies: RColorBrewer
+# Input:
+#   meth_distr_per_region - dataset with the cpg id, group, region name,
+#     sample/ctrl associated, methylation %, as_ctrl_region and new_order.
+#     as_ctrl_region: if region is a control region (logical vector).
+#     new_order: combined vector that will be used to determine  the order
+#     of boxes to plot (character vector).
+#   max_nb_regions_per_plot - maximum number or regions per plot
+#   export_tables_graphs - TRUE/FALSE, should graphs be exported as pdf files?
+#   dir_name - path to the output directory
+split_loop_boxplot_meth_distr <- function(meth_pct_distrib_per_region,
+                                          max_nb_regions_per_plot,
+                                          export_tables_graphs,
+                                          dir_name){
+  
+  #If too much regions: re-generate the boxplots and split them.
+  name_regions <- unique(meth_pct_distrib_per_region$name)
+  if (length(name_regions) > max_nb_regions_per_plot) {
+    
+    
+    # Set the order of boxes names to set the order of regions throughout the 
+    #   different boxplots.
+    new_order <-
+      order(paste0(meth_pct_distrib_per_region$as_ctrl_region, ",",
+                   meth_pct_distrib_per_region$name, ",",
+                   as.numeric(meth_pct_distrib_per_region$group_samples)))
+    
+    name_regions <- unique(meth_pct_distrib_per_region$name[new_order])
+    
+    # Set nb of graph to plot.
+    nb_plots <- ceiling( length(name_regions)  / max_nb_regions_per_plot)
+    
+    # Loop: generate (and export if required) each boxplot.
+    for (x in 1:nb_plots ) {
+      
+      # Retrieve names of regions to plot.
+      name_region = name_regions[
+        (1:max_nb_regions_per_plot) + (x - 1) * max_nb_regions_per_plot
+      ]
+      name_region = name_region[!is.na(name_region)]
+      
+      #Generate the boxplots.
+      boxplot_meth_distr_per_region(
+        meth_pct_distrib_per_region[
+          meth_pct_distrib_per_region$name %in% name_region,]
+      )
+      
+      # If required, export the boxplot as a pdf file. ----
+      if (export_tables_graphs) {
+        dev.copy(pdf,
+                 file.path(
+                   dir_name,
+                   paste0("MethPctPlot_perRegion_perSample", 
+                          ifelse(nb_plots==1, "" , paste0("_", x)),
+                          ".pdf")
+                 ),
+                 width = 10, height = 4
+        )
+        tmp_var <- dev.off()
+        rm(tmp_var)
+      }
+    }
+    
+    
+  }
+  
+  
+  
+}
+
+
+
+
+
+
+
 #######################################
 # Summary table per region
 #######################################
 
 # ----
-# Function to generate a dataframe with mean methylation % difference per
+# Function to generate a dataframe with median methylation % difference per
 #   region between control population and each case. ----
 # Input:
 #   regions_to_analyze - dataset with the region name, positions, groups,
@@ -322,7 +405,7 @@ boxplot_meth_distr_per_region <- function(meth_distr_per_region) {
 #   control_meth - methylation % distribution for the control population.
 #     Rownames: cpg ids / colnames: name of distribution parameter (mean, min,
 #     max, X1, X5, X25, X75, X95, X99 required).
-get_region_mean_diff_dataset <- function(regions_to_analyze, regions_all,
+get_region_median_diff_dataset <- function(regions_to_analyze, regions_all,
                                          sample_meth, control_meth) {
   
   # Retrieve all groups ----
@@ -355,38 +438,39 @@ get_region_mean_diff_dataset <- function(regions_to_analyze, regions_all,
   regions_to_analyze_tmp <-
     regions_to_analyze_tmp[, c("group", "name", "position_hg38", "probes_epic")]
   
-  # Compute mean methylation % for the control population per region ----
-  regions_to_analyze_tmp$average_meth_ctrlpop <-
+  # Compute median methylation % for the control population per region ----
+  regions_to_analyze_tmp$median_meth_ctrlpop <-
     sapply(regions_to_analyze_tmp$probes_epic, function(x) {
-      mean(control_meth[unlist(strsplit(x, ",")), "mean"], na.rm = TRUE)
+      median(control_meth[unlist(strsplit(x, ",")), "mean"], na.rm = TRUE)
     })
   
-  # Compute mean methylation % per case per region ----
-  mean_meth_per_case <- do.call(
+  # Compute median methylation % per case per region ----
+  median_meth_per_case <- do.call(
     "rbind",
     lapply(regions_to_analyze_tmp$probes_epic, function(x) {
-      colMeans(
-        sample_meth[unlist(strsplit(x, ",")), , drop = FALSE],
-        na.rm = TRUE
-      )
+      apply(sample_meth[unlist(strsplit(x, ",")), , drop = FALSE], 
+            2,
+            function(x){
+              median(x, na.rm = TRUE)
+              })
     })
   )
   
   # ----
-  # Compute mean methylation % difference per region between control and
+  # Compute median methylation % difference per region between control and
   #   each case ----
-  mean_diff_per_case <-
-    mean_meth_per_case - regions_to_analyze_tmp$average_meth_ctrlpop
+  median_diff_per_case <-
+    median_meth_per_case - regions_to_analyze_tmp$median_meth_ctrlpop
   regions_to_analyze_tmp <- cbind(regions_to_analyze_tmp,
-                                  mean_meth_per_case, mean_diff_per_case)
+                                  median_meth_per_case, median_diff_per_case)
   
   # Clean dataframe and rename columns ----
   regions_to_analyze_tmp$probes_epic <- NULL
   rownames(regions_to_analyze_tmp) <- NULL
   colnames(regions_to_analyze_tmp) <- c(
     "group", "region_name", "position_hg38",
-    "MethPct_mean_ctrlPop",
-    paste0("MethPct_mean_", colnames(sample_meth)),
+    "MethPct_median_ctrlPop",
+    paste0("MethPct_median_", colnames(sample_meth)),
     paste0("MethPct_difference_", colnames(sample_meth))
   )
   
@@ -394,12 +478,12 @@ get_region_mean_diff_dataset <- function(regions_to_analyze, regions_all,
 }
 
 # ----
-# Function to print the regions with the mean methylation % difference in a
+# Function to print the regions with the median methylation % difference in a
 #   formatted table ----
 # Dependencies: kableExtra
 # Input:
 #   regions_with_methpct - dataset with the group, region name, chr:start-end
-#     positions, mean Ctrl Pop Meth % and Meth % (mean diff) for each sample.
+#     positions, median Ctrl Pop Meth % and Meth % (median diff) for each sample.
 #   name_samples - vector of sample names in the same order than the dataset
 #     provided.
 #   regions_group_to_check - vector of groups to be highlighted.
@@ -505,7 +589,7 @@ print_methdiff_formatted_table <- function(regions_with_methpct,
       c(" " = 4, "Difference against ctrlPop" = length(name_samples))
     ) %>%
     add_header_above(
-      c(" " = 3, "Mean methylation Percentage (%)" = 1 + length(name_samples))
+      c(" " = 3, "Median methylation Percentage (%)" = 1 + length(name_samples))
     )
   
   # Color background of control regions ----

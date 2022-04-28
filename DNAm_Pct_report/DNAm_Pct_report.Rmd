@@ -34,9 +34,9 @@ params:
   samples_id_to_check: 'ZH1609094r1,ZH1712576ms2,ZH2005406k1'
   control_path: !r file.path('..','test_data','Control_population.csv.gz')
   regions_path: !r paste(file.path('..','test_data','regionsList_v1-2022_03_25.tsv'),file.path('..','test_data','fakeRegionsListForTests.tsv'), sep=",")
-  regions_group_to_check: "PHP,BWS,SRS"
+  regions_group_to_check: "PHP,BWS,SRS,MLID"
   regions_status: "High,Low,l"
-  group_as_ctrls: "SRS"
+  group_as_ctrls: "SRS,BWS,MLID"
   export_tables_graphs: TRUE
   outputDir_path: !r file.path('..','ExampleOfReport')
   cpg_positions: !r file.path('annot_rds_files','positions-probesEPIC-hg38.rds')
@@ -211,35 +211,10 @@ if (params$export_tables_graphs) {
   )
 }
 
-# Print the dataframe with the general information about the analysis. The table is printed via 3 tables to allow multiple columns. 
-
-# ----
-# Print a first table with the general information about the report and the
-#   sample and control files provided. ----
-info_dataframe[1:5, ] %>%
-  kable("html") %>%
-  kable_styling(font_size = 11, full_width = TRUE, position = "left")
-
-# ----
-# Print 2 side tables with the general information about the regions provided
-#   (with or without control regions). ----
-info_dataframe[6:(5 + floor((nrow(info_dataframe) - 5) / 2)), ] %>%
-  kable("html") %>%
-  kable_styling(font_size = 11, full_width = FALSE, position = "float_left")
-
-info_dataframe[
-  (6 + floor((nrow(info_dataframe) - 5) / 2)):nrow(info_dataframe), ] %>%
-  kable("html") %>%
-  kable_styling(font_size = 11, full_width = FALSE, position = "right")
-
-# ----
-# Print an empty table to avoid potential display issues due to "float_left"
-#   position from a preceding table. If removed, the table with "float_left"
-#   position could overlap some titles and text. ----
-info_dataframe[1, , drop = FALSE] %>%
-  kable("html") %>%
-  kable_styling(font_size = 11, full_width = TRUE) %>%
-  row_spec(1, color = "transparent")
+# Print the dataframe with the general information about the analysis. 
+#   The table is printed via 3 tables to allow multiple columns. 
+tables_print <- print_info_dataframe(info_dataframe)
+for (x in 1:length(tables_print)) { print( tables_print[[x]] ) }
 
 
 ```
@@ -306,6 +281,7 @@ if (!is.null(list_manhattan_plot)) {
   }
 }
 rm(list_manhattan_plot)
+
 ```
   
   
@@ -321,31 +297,43 @@ meth_pct_distrib_per_region <-
   combine_datasets_for_boxplot(regions_to_analyze, sample_meth,
                                control_meth, params$group_as_ctrls)
 
-#Generate the boxplots.
-boxplot_meth_distr_per_region(meth_pct_distrib_per_region)
+# #Generate the boxplots.
+# boxplot_meth_distr_per_region(meth_pct_distrib_per_region)
+# 
+# # If required, export the boxplot as a pdf file. ----
+# if (params$export_tables_graphs) {
+#   dev.copy(pdf,
+#     file.path(
+#       dir_name,
+#       "MethPctPlot_perRegion_perSample.pdf"
+#     ),
+#     width = 10, height = 4
+#   )
+#   tmp_var <- dev.off()
+#   rm(tmp_var)
+# }
 
-# If required, export the boxplot as a pdf file. ----
-if (params$export_tables_graphs) {
-  dev.copy(pdf,
-    file.path(
-      dir_name,
-      "MethPctPlot_perRegion_perSample.pdf"
-    ),
-    width = 10, height = 4
+
+# Check if boxplots should be split, generate the boxplots and if required, 
+#   export the boxplots as pdf files. ----
+split_loop_boxplot_meth_distr(
+  meth_pct_distrib_per_region,
+  max_nb_regions_per_plot = 10, 
+  export_tables_graphs = params$export_tables_graphs,
+  dir_name
   )
-  tmp_var <- dev.off()
-  rm(tmp_var)
-}
+
+
 ```
 
 <br>
 
 ***  
 # Methylation Percentage difference per region  
-<!-- Generate and print a dataframe with mean data per region. -->
+<!-- Generate and print a dataframe with median data per region. -->
 ```{r methdifftable_generate_and_print, echo=FALSE, results = 'asis'}
-# Get a dataframe with mean methylation % difference per region. ----
-regions_with_methpct <- get_region_mean_diff_dataset(
+# Get a dataframe with median methylation % difference per region. ----
+regions_with_methpct <- get_region_median_diff_dataset(
   regions_to_analyze, regions_all,
   sample_meth, control_meth
 )
@@ -361,7 +349,7 @@ index_control_regions <-
   })
 index_control_regions <- which(index_control_regions)
 
-# Print the dataframe with mean methylation % difference per region.----
+# Print the dataframe with median methylation % difference per region.----
 print_methdiff_formatted_table(regions_with_methpct,
   name_samples = colnames(sample_meth),
   params$regions_group_to_check, index_control_regions
@@ -385,8 +373,6 @@ if (params$export_tables_graphs) {
 # Methylation Percentage profiles
 <!-- Loop to generate a profile plot for each selected region inside a new sub-section and, if required, directly export each plot as a pdf file. -->
 ```{r profile_plots_and_export, echo=FALSE, fig.height=8, fig.width=10, results = 'asis', message=FALSE}
-source("func_profile_region.R")
-
 # ----
 # Loop for each region: plot a profile plot for each region inside a new
 #   sub-section and, if required, export it as a pdf.
@@ -418,6 +404,13 @@ for (name_region in name_regions) {
     chr_vec, start_vec, end_vec
   )
 
+  
+  # Limit the number of genes on the gene panel: the rest is condensed in a 
+  #   coverage line and their name is exported below the plot and, if export 
+  #   is required, in a gene table associated to the graph output
+  region_data$gene 
+  
+  
   # Profile plot function ----
   plot_region_profile(
     region_data$sample, region_data$control,
@@ -427,26 +420,25 @@ for (name_region in name_regions) {
   )
 
 
-
-  # # If required, export the profile plot ----
-  # if (params$export_tables_graphs) {
-  #   name_region_corrected <-
-  #     gsub(
-  #       pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
-  #       replacement = "-",
-  #       x = name_region
-  #     )
-  #   dev.copy(pdf,
-  #     file.path(
-  #       dir_name,
-  #       "MethPctPlot_perRegion",
-  #       paste0("MethPctPlot_", name_region_corrected, ".pdf")
-  #     ),
-  #     width = 10, height = 6
-  #   )
-  #   tmp_var <- dev.off()
-  #   rm(tmp_var)
-  # }
+  # If required, export the profile plot ----
+  if (params$export_tables_graphs) {
+    name_region_corrected <-
+      gsub(
+        pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
+        replacement = "-",
+        x = name_region
+      )
+    dev.copy(pdf,
+      file.path(
+        dir_name,
+        "MethPctPlot_perRegion",
+        paste0("MethPctPlot_", name_region_corrected, ".pdf")
+      ),
+      width = 10, height = 6
+    )
+    tmp_var <- dev.off()
+    rm(tmp_var)
+  }
 
 
   # ----
@@ -458,11 +450,128 @@ for (name_region in name_regions) {
   rm(list = c("region_data", "chr_vec", "start_vec", "end_vec"))
 }
 ```
-<!-- Removing the annotation rds files. -->
-```{r removing_annotation, echo=FALSE, message=FALSE}
-rm(list = c("annot_gene_list", "annot_cgi_list", "annot_repeats_list"))
-```
 
 ***
 
+
+
+# Methylation Percentage profiles 2
+<!-- Loop to generate a profile plot for each selected region inside a new sub-section and, if required, directly export each plot as a pdf file. -->
+```{r profile_plots_and_export2, echo=FALSE, fig.height=8, fig.width=10, results = 'asis', message=FALSE}
+# ----
+# Loop for each region: plot a profile plot for each region inside a new
+#   sub-section and, if required, export it as a pdf.
+# For each region, the coordinates are used to subset the sample and control
+#   datasets, then these datasets are used with the annotation to plot the
+#   profile. The subset is also made on the different annotation datasets. ----
+name_regions <- regions_to_analyze$name[
+  order(regions_to_analyze$name, regions_to_analyze$group)]
+for (name_region in name_regions) {
+
+  # print sample name with "## " tag to print a sub-section
+  cat(paste("##", name_region, "\n", sep = " "))
+  flush.console()
+
+
+
+  # Retrieve coordinates ----
+  chr_vec <- regions_to_analyze[regions_to_analyze$name == name_region, "chr"]
+  start_vec <-
+    regions_to_analyze[regions_to_analyze$name == name_region, "start"] - 1000
+  end_vec <-
+    regions_to_analyze[regions_to_analyze$name == name_region, "end"] + 1000
+
+  # Subset all datasets based on current region ----
+  region_data <- get_datalist_based_on_region(
+    sample_meth, control_meth, positions,
+    annot_gene_list, annot_cgi_list,
+    annot_repeats_list, regions_all,
+    chr_vec, start_vec, end_vec
+  )
+
+  
+  # Limit the number of genes on the gene panel: the rest is condensed in a 
+  #   coverage line and their name is exported below the plot and, if export 
+  #   is required, in a gene table associated to the graph output
+  genes_not_in_gene_panel <- c()
+  if(nrow(region_data$gene) > 10){
+    #Only the 10 first genes are plotted
+    index_genes_to_plot <- 1:10
+    genes_not_in_gene_panel <- region_data$gene[-1*index_genes_to_plot,]
+    region_data$gene <- region_data$gene[index_genes_to_plot,]
+  }
+  
+  
+  # Profile plot function ----
+  plot_region_profile(
+    region_data$sample, region_data$control,
+    chr_vec, start_vec, end_vec,
+    region_data$gene, region_data$cgi,
+    region_data$repeats, region_data$regions_to_plot
+  )
+
+  #Print table for all the genes that could not be plotted
+  if(length(genes_not_in_gene_panel) > 0){
+    print(
+    genes_not_in_gene_panel[,c("chr", "start", "end", 
+                               "strand", "gene_name", 
+                               "exonStarts", "exonEnds")] %>%
+      kable("html", caption = "Additional genes overlapping this region...") %>%
+      kable_styling(font_size = 11, full_width = TRUE, position = "left") %>%
+      scroll_box(width = "100%", height = "200px")
+    )
+    
+    # If required, export (as a csv file) the dataframe with the genes info 
+    #   that could not be plotted.
+    if (params$export_tables_graphs) {
+      write.csv(
+        genes_not_in_gene_panel[,c("chr", "start", "end", 
+                               "strand", "gene_name", 
+                               "exonStarts", "exonEnds")],
+        file = 
+          file.path(
+            dir_name,
+            "MethPctPlot_perRegion",
+            paste0("MethPctPlot_", name_region_corrected, 
+                   "_additionalGenes.csv")
+            ),
+        quote = TRUE, row.names = FALSE
+        )
+      }
+  }
+
+  # If required, export the profile plot ----
+  if (params$export_tables_graphs) {
+    name_region_corrected <-
+      gsub(
+        pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
+        replacement = "-",
+        x = name_region
+      )
+    dev.copy(pdf,
+      file.path(
+        dir_name,
+        "MethPctPlot_perRegion",
+        paste0("MethPctPlot_", name_region_corrected, ".pdf")
+      ),
+      width = 10, height = 6
+    )
+    tmp_var <- dev.off()
+    rm(tmp_var)
+  }
+
+
+  # ----
+  # print "pagebreaks" and "\n" to avoid potential issues with the
+  #   sub-section ----
+  cat("\n\n\\pagebreak\n")
+  flush.console()
+  
+  rm(list = c("region_data", "chr_vec", "start_vec", "end_vec"))
+}
+
+
+```
+
+***
 

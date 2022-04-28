@@ -1,0 +1,353 @@
+---
+title: "IDAT processing - QC report"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+params:
+  idat_dir: '../../../../GitHub_Files/GitHub/DNAm_Analysis/Idat_files/'
+  control_path: '../../../../GitHub_Files/GitHub/DNAm_Analysis/DNAm_analysis_test/DATA/Control_population.csv.gz'
+  truncate_samples_names: TRUE
+  remove_probes_highpval: FALSE
+  remove_samples_highpval: FALSE
+  removeSamplesWithBadMethUnmeth: FALSE
+  badMethUnmethSampleCutoff: 10.5
+  remove_snip: FALSE
+---
+
+<style type="text/css">
+h2 { /* Header 2 */
+    font-size: 18px
+}
+</style>
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+`r paste0("Date of report: ", Sys.time())`
+
+<details>
+  <summary>Click here to show warnings</summary>
+  <div class = "blue">
+  
+```{r loading_libraries_and_scripts, echo=FALSE, message=FALSE, collapse=TRUE}
+#Load required libraries --------------------------------
+library(minfi)#for QC pre-treatment
+library(reshape2)#for QC pre-treatment
+library(IlluminaHumanMethylationEPICmanifest)#@@@todo check for non-EPIC data
+library(IlluminaHumanMethylation450kmanifest)#@@@todo check for non-450k data
+library(kableExtra)
+library(shiny)
+
+#Load scripts with functions
+source("./func_qc.R")
+```
+```{r loading_icons, echo=FALSE, message=FALSE, collapse=TRUE}
+iconGOOD <- icon("check-circle", style="color: rgb(100,190,0); font-size: 30px")
+iconWARNING <- icon("question-circle", style="color: rgb(255,185,0); font-size: 30px")
+iconBAD <- icon("times-circle", style="color: rgb(255,0,0); font-size: 30px")
+iconDISABLED <- shiny::icon("minus-circle", style="color: rgb(200,200,200); font-size: 30px")
+```
+
+```{r loading_data, echo=FALSE, message=FALSE, collapse=TRUE}
+RGSet <- read.metharray.exp(params$idat_dir)
+if(params$truncate_samples_names){
+  sampleNames(RGSet) <- lapply(sampleNames(RGSet), {function(x) sub('_.*', '', x)})
+}
+```
+
+
+```{r check_detectionPVal, echo=FALSE, message=FALSE, collapse=TRUE}
+#Detection P-value computation and checking -------------------------------------
+
+#Compute and format qc data - detection p-value -------------------------------------
+data_detectpval <- get_qc_data_detectpval(RGSet)
+
+#Detection P-value - get qc result -------------------------------------
+DetectPvalQCresult <-
+  get_qc_result_detectpval(data_detectpval$frac_failed_pos_per_sample,
+                           data_detectpval$mean_pval_per_failed_pos,
+                           data_detectpval$d_pval,
+                           iconGOOD, iconWARNING, iconBAD,
+                           params$remove_probes_highpval,
+                           params$remove_samples_highpval)
+  
+```
+
+```{r check_MethUnmeth, echo=FALSE, message=FALSE, collapse=TRUE}
+#MethUnmeth median intensity comparison ----------------------------
+
+#Compute and format qc data - MethUnmeth median intensity -------------------------------------
+data_methunmeth <- 
+  get_qc_data_methunmeth(
+    RGSet, 
+    badSampleCutoff = as.numeric(params$badMethUnmethSampleCutoff)
+    )
+
+#MethUnmeth median intensity - get qc result -------------------------------------
+MethUnmethQCresult <-
+  get_qc_result_methunmeth(data_methunmeth$tblPlot_methUnmeth,
+                           iconGOOD, iconBAD,
+                           params$removeSamplesWithBadMethUnmeth)
+
+
+```
+
+```{r check_ControlProbes, echo=FALSE, message=FALSE, collapse=TRUE}
+#Control Probes intensity ----------------------------
+
+# Compute and format qc data - Control probes  -------------------------------------
+#   The following Code is an adapted version of qcReport function 
+#   from minfi package.
+data_ctrlprobes <- get_qc_data_ctrlprobes(RGSet)
+
+#Control probes - get qc result -------------------------------------
+ctrlProbesQCresult <- 
+  get_qc_result_ctrlprobes(data_ctrlprobes$nb_bad_probes_per_sample, 
+                           iconGOOD, iconWARNING)
+
+```
+
+```{r check_BetaValueDensity, echo=FALSE, message=FALSE, collapse=TRUE}
+#Beta-value density ----------------------------
+bval_threshold = 250
+plot_legend_text <- ""
+
+if(!is.null(params$control_path)){
+  # Compute and format qc data - Beta-value density  -------------------------------------
+  data_bvaldensity <- get_qc_data_bvaldensity(RGSet, 
+                                              params$control_path,
+                                              bval_threshold)
+  
+  # Beta-value density - get qc result -------------------------------------
+  bvalDensityDiffQCresult <- 
+    get_qc_result_bvaldensity(
+      data_bvaldensity$bval_abs_diff_per_sample,
+      bval_threshold, 
+      iconGOOD, iconWARNING
+      )
+  
+  plot_legend_text <- 'Red curve is based on 
+<span style=" color: white !important;border-radius: 4px; padding-right: 4px; padding-left: 4px; background-color: #FF0000 !important;" >the control population</span>
+   provided.  '
+  
+} else {
+  bvalDensityDiffQCresult <- list(
+    iconDISABLED,
+    paste0("Beta-value density Quality Check disabled.",
+           " Please provide a control reference distribution",
+           " to enable this part."),
+    ""
+    )
+  
+}
+
+```
+
+  </div>
+</details>
+
+
+Icon | Description
+:-------------:|-------------
+`r iconGOOD`  | Good result. No need to perform an additional filter on this parameter.
+`r iconWARNING`  | Some filter have been applied. User should check in this section if the sample(s) can be kept.
+`r iconBAD` | Bad result. At least one sample do not meet the quality requirements and must be removed from the analysis.
+
+
+***
+
+# `r DetectPvalQCresult[[1]]` Detection p-value    
+   
+|   |
+|:-------------:|
+|  `r DetectPvalQCresult[[2]]`  |
+|  `r DetectPvalQCresult[[3]]`  |
+  
+***  
+  
+  
+##### Detection p-values distribution...  {.tabset .tabset-fade}  
+
+  
+###### for each sample
+  
+  
+```{r detectPvalQCTable1AndPlot, echo=FALSE, fig.height=4, fig.width=6}
+par(mar=c(5.1, 12.1, 0.1, 1.1))
+frac_per_sample <- data_detectpval$frac_failed_pos_per_sample
+barplot(frac_per_sample$FailedPositionsPct, 
+        names.arg = frac_per_sample$sampleNames,
+        col = ifelse(frac_per_sample$FailedPositionsPct > 1, 
+                     "#FFA5A5", "grey"),
+        xlim = c(0,max(frac_per_sample$FailedPositionsPct, 2)), 
+        xlab = "Percentage of bad quality probes (%)", 
+        horiz = TRUE, las=1)
+abline(v=1, col="red", lty=2)
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+
+data_detectpval$tbl_detectPVal1
+```
+     
+
+
+###### for each CpG position
+  
+```{r detectPvalQCTable2, echo=FALSE}
+data_detectpval$tbl_detectPVal2
+```
+
+#####
+
+<br>
+  
+***
+
+# `r MethUnmethQCresult[[1]]` Meth/Unmeth median intensity    
+   
+|   |
+|:-------------:|
+|  `r MethUnmethQCresult[[2]]`  |
+|  `r MethUnmethQCresult[[3]]`  |
+  
+***  
+  
+  
+```{r methUnmethQCTableAndPlot, echo=FALSE, fig.height=3.85, fig.width=5.5}
+layout(matrix(1:2, ncol=2), width=c(0.7,0.3))
+par(mar=c(5.1, 4.1, 0.1, 0.1))
+xy_limits <- c(min(9, min(data_methunmeth$tblPlot_methUnmeth[,1:2])-1), 
+               max(14, max(data_methunmeth$tblPlot_methUnmeth[,1:2])+1) )
+plot(x=data_methunmeth$tblPlot_methUnmeth$mMed, 
+     y=data_methunmeth$tblPlot_methUnmeth$uMed, 
+     col=ifelse(data_methunmeth$tblPlot_methUnmeth$whichIsBad == "bad", 
+                "red", "black"),
+     pch=20, 
+     xlab="Meth median intensity (log2)",
+     ylab="Unmeth median intensity (log2)",
+     xlim=xy_limits, ylim=xy_limits
+     ) 
+abline(a=as.numeric(params$badMethUnmethSampleCutoff)*2, 
+       b=-1, col="red", lty=2)
+
+par(mar=c(5.1, 0.1, 0.1, 0.1))
+plot.new()
+legend("top", title = "Quality", 
+       legend = c("good", "bad"), 
+       pch=20,
+       col = c("black","red"), xpd=TRUE)
+layout(matrix(1, ncol=1))
+
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+
+data_methunmeth$tbl_methUnmeth
+
+data_methunmeth$tblPlot_methUnmeth[1,, drop=FALSE] %>%
+  kable("html") %>%
+  kable_styling(full_width = TRUE) %>%
+  row_spec(0:1, color = "transparent")
+
+```
+     
+
+<br>  
+
+***  
+
+# `r ctrlProbesQCresult[[1]]` Control probe signal intensity    
+   
+|   |
+|:-------------:|
+|  `r ctrlProbesQCresult[[2]]`  |
+|  `r ctrlProbesQCresult[[3]]`  |
+  
+***  
+  
+  
+```{r ctrlProbesQCTable, echo=FALSE, results = 'asis'}
+data_ctrlprobes$tbl_ctrlProbes1
+
+data_ctrlprobes$tbl_ctrlProbes2
+
+as.data.frame(data_ctrlprobes$nb_bad_probes_per_sample)[1,, drop=FALSE] %>%
+  kable("html") %>%
+  kable_styling(full_width = TRUE) %>%
+  row_spec(0:1, color = "transparent")
+
+```
+     
+  
+***  
+  
+##### Control probes...  {.tabset .tabset-fade}  
+
+     
+     
+```{r ctrlProbesQCPlot, echo=FALSE, fig.height=5, fig.width=10, results = 'asis', message=FALSE}
+
+for (i in 1:length(data_ctrlprobes$controlsList)) {
+  
+  cat(paste("######", names(data_ctrlprobes$controlsList)[i], "\n\n", sep=" "))
+  flush.console()
+  
+  controlProbesGreenRedPlot(data_ctrlprobes$controlsList[[i]], 
+                            controlType=names(data_ctrlprobes$controlsList)[i])
+  
+  cat("\n\n")
+  flush.console()
+
+  }
+
+```
+     
+
+#####
+
+<br>  
+
+***  
+
+# `r bvalDensityDiffQCresult[[1]]` Beta-values distribution    
+   
+|   |
+|:-------------:|
+|  `r bvalDensityDiffQCresult[[2]]`  |
+|  `r bvalDensityDiffQCresult[[3]]`  |
+  
+***  
+    
+`r plot_legend_text`    
+  
+   
+  
+```{r bvalDensityDiffQCTable, echo=FALSE, fig.height=3.85, fig.width=5.5, results = 'asis'}
+
+if(!is.null(params$control_path)){
+  par(mar=c(5.1, 4.1, 0.1, 2.1))
+  bvalDensityPlot(data_bvaldensity$density_samples, 
+                  data_bvaldensity$density_ref)
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  
+  print(data_bvaldensity$tbl_bvalDensityDiff)
+  
+  print(
+  data_bvaldensity$bvalDensityDiff_table[1,, drop=FALSE] %>%
+    kable("html") %>%
+    kable_styling(full_width = TRUE) %>%
+    row_spec(0:1, color = "transparent")
+  )
+}
+
+```
+     
+
+<br>  
+
+*** 
+  

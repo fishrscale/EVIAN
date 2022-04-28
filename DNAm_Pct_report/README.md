@@ -13,7 +13,7 @@ Follow the instructions on the base *ReadMe.md* to install the EVIAN toolbox and
 To test this script, example files are provided in the *test_data* directory.
 
 Once you loaded the required dependencies to use this tool, you can either:
-* launch the *DNAm_Pct.R* script that will generate the report from the Rmd file:
+* launch the *DNAm_Pct.R* script (-h or --help to see each option available) that will generate the report from the Rmd file:
 
 ```
 cd ./path/to/EVIAN

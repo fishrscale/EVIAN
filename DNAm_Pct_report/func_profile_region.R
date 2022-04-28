@@ -138,7 +138,8 @@ get_datalist_based_on_region <- function(sample_meth, control_meth, positions,
 #     to be used to delimitate the region to plot.
 #   annot_gene - used to plot the gene panels. Dataset with the chr, start, end,
 #     strand columns. Must also have a column gene_name. Columns exonStarts and
-#     exonEnds are used to plot exons.
+#     exonEnds are used to plot exons (e.g. "start1,start2,start3," and 
+#     "end1,end2,end3,").
 #   annot_cgi - used to plot the cpg island panels. Dataset with the chr,
 #     start, end.
 #   annot_repeats - used to plot the repeats panels. Dataset with the chr,

@@ -162,6 +162,43 @@ generate_info_dataframe <- function(sample_meth, regions_to_analyze,
 }
 
 
+# Print the dataframe with the general information about the analysis. 
+#   The table is printed via 3 tables to allow multiple columns. 
+print_info_dataframe <- function(info_dataframe){
+  list_kable <- list()
+  
+  # ----
+  # Print a first table with the general information about the report and the
+  #   sample and control files provided. ----
+  list_kable[[1]] <- info_dataframe[1:5, ] %>%
+    kable("html") %>%
+    kable_styling(font_size = 11, full_width = TRUE, position = "left")
+  
+  # ----
+  # Print 2 side tables with the general information about the regions provided
+  #   (with or without control regions). ----
+  list_kable[[2]] <- info_dataframe[6:(5 + floor((nrow(info_dataframe) - 5) / 2)), ] %>%
+    kable("html") %>%
+    kable_styling(font_size = 11, full_width = FALSE, position = "float_left")
+  
+  list_kable[[3]] <- info_dataframe[
+    (6 + floor((nrow(info_dataframe) - 5) / 2)):nrow(info_dataframe), ] %>%
+    kable("html") %>%
+    kable_styling(font_size = 11, full_width = FALSE, position = "right")
+  
+  # ----
+  # Print an empty table to avoid potential display issues due to "float_left"
+  #   position from a preceding table. If removed, the table with "float_left"
+  #   position could overlap some titles and text. ----
+  list_kable[[4]] <- info_dataframe[1, , drop = FALSE] %>%
+    kable("html") %>%
+    kable_styling(font_size = 11, full_width = TRUE) %>%
+    row_spec(1, color = "transparent")
+  
+  return(list_kable)
+}
+
+
 #######################################
 # Manhattan plot
 #######################################

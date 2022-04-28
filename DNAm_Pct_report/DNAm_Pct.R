@@ -24,7 +24,6 @@ args <- commandArgs()
 dirScript <- dirname(gsub(args[ grep(args, pattern = "--file") ],
                           pattern = "--file=", replacement = ""))
 if(length(dirScript)==0){ dirScript="." }
-#if(length(dirScript)==1){ setwd(dirScript) }
 
 # Loading arguments----
 library(optparse)
@@ -89,7 +88,7 @@ option_list = list(
 )
 
 opt_parser = OptionParser(option_list=option_list)
-parameters = parse_args(opt_parser);
+parameters = parse_args(opt_parser)
 
 # Print arguments----
 print(paste("Launching Report generation with following args:",

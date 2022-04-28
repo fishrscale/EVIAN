@@ -1,0 +1,114 @@
+---
+#entête : comparison of 2 large matrix + format
+
+
+title: "Beta-values comparison - QC report"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+params:
+  bval1: NULL
+  name_bval1: ""
+  bval2: NULL
+  name_bval2: ""
+---
+
+<style type="text/css">
+h2 { /* Header 2 */
+    font-size: 18px
+}
+</style>
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+`r paste0("Date of report: ", Sys.time())`
+
+<details>
+  <summary>Click here to show warnings</summary>
+  <div class = "blue">
+  
+```{r compare_BetaValueDensity, echo=FALSE, message=FALSE, collapse=TRUE}
+#Beta-value density ----------------------------
+densityList_1 <- lapply( 1:ncol(params$bval1), function(x){
+    density(params$bval1[, x], na.rm=TRUE)
+  } )
+names(densityList_1) <- colnames(params$bval1)
+  
+densityList_2 <- lapply( 1:ncol(params$bval2), function(x){
+    density(params$bval2[, x], na.rm=TRUE)
+  } )
+names(densityList_2) <- colnames(params$bval2)
+
+#Beta value density plot function
+bvalDensityPlot_comparison <- function(densityList_1, densityList_2, 
+                                       name_bval1, name_bval2){
+  
+  maxYlim <- max( sapply(densityList_1, function(x){ max(x$y) }),
+                  sapply(densityList_2, function(x){ max(x$y) })) * 1.05
+
+  sample_names <- unique(c(names(densityList_1), names(densityList_2)))
+  colorV <- colorRampPalette(c(rgb(0,0,1),
+                               rgb(0,1,1)))(length(sample_names))
+  names(colorV) <- sample_names
+  
+  layout(matrix(c(1,2,3), ncol=3), widths = c(0.4, 0.4, 0.2))
+  
+  plot(main = name_bval1,
+       x = 1, y = 1, xlim = c(0,1), ylim = c(0, maxYlim), 
+       pch=NA, xlab = "Beta-value", ylab = "Density")
+  abline(h=0, col = "grey60")
+  for (n in names(densityList_1)) {
+    lines(densityList_1[[n]], col=colorV[n])
+  }
+  
+  plot(main = name_bval2,
+       x = 1, y = 1, xlim = c(0,1), ylim = c(0, maxYlim), 
+       pch=NA, xlab = "Beta-value", ylab = "Density")
+  abline(h=0, col = "grey60")
+  for (n in names(densityList_2)) {
+    lines(densityList_2[[n]], col=colorV[n])
+  }
+  
+  par(mar=c(0,0,0,0))
+  plot.new()
+  legend("top", 
+         legend = names(colorV), 
+         fill = colorV )
+  
+  par(mar=c(5.1,4.1,4.1,2.1))
+  
+  layout(matrix(1))
+}
+
+
+```
+
+  </div>
+</details>
+
+  
+
+# Beta-values distribution comparison    
+   
+
+```{r bvalDensityComparison, echo=FALSE, fig.height=4.5, fig.width=8.5, results = 'asis'}
+
+bvalDensityPlot_comparison(densityList_1, densityList_2, 
+                           params$name_bval1, params$name_bval2)
+
+
+```
+     
+
+<br>  
+
+*** 
+  

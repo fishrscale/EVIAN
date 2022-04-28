@@ -409,7 +409,7 @@ ui <- fluidPage(
     # Third tool ----
     tabPanel("DMR identification...",
              h3("This is the third panel")
-    )      
+    )
     # ----
   )     
 )
@@ -812,7 +812,8 @@ server <- function(input,output,session) {
 
 # Compile, launch app and retrieve command to be launched ----
 #compile app
-app <- shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))
+app <- shinyApp(ui = ui, server = server, 
+                options = list(launch.browser = TRUE))
 #run app / retrieve command
 commandToLaunch <- runApp(app)
 # window.close()

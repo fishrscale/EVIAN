@@ -27,10 +27,6 @@ conda create -n EVIAN_env -c conda-forge -c bioconda r r-essentials r-rmarkdown 
 conda activate EVIAN_env
 ```
 
-### Installation via R/RStudio
-
-@@@To complete
-
 ## Usage
 
 The usage of each tool is detailed in the ReadMe.md of each corresponding directory.
@@ -48,10 +44,6 @@ Rscript ./path/to/EVIAN_shiny.R
 @@@To complete with a screenshot modified
 
 * Follow the required instructions, select the files and conditions you want to use for the analysis.
-
-@@@To complete with a screenshot modified
-
-~~* Click on the Bookmark button if you want to save all your current inputs for a later analysis.~~
 
 @@@To complete with a screenshot modified
 
