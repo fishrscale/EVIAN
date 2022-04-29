@@ -3,6 +3,7 @@
 # EVIAN_shiny.R
 # Generate an interface to return command lines and launch additional tools.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #
@@ -38,7 +39,7 @@ library(waiter)
 
 
 # Define UI for app ----
-source("./EVIAN_shiny_modules/ui_idat_process.R")
+source("./EVIAN_shiny_modules/ui_idat_process_and_qc.R")
 source("./EVIAN_shiny_modules/ui_dnam_pct_report.R")
 source("./EVIAN_shiny_modules/ui_dmr_identification.R")
 

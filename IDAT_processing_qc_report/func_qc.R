@@ -1,4 +1,33 @@
-
+# --------------------------------------------
+#
+# func_profile_region.R
+# Contains the functions (from the DNAm_Pct_report.Rmd) used to 
+#   generate the methylation profile per region.
+# Version 1.0
+# Date: 29 April 2022
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Functions:
+# # Detection P-value - QC
+#   get_qc_data_detectpval
+#   get_qc_result_detectpval
+# # MethUnmeth median intensity - QC
+#   get_qc_data_methunmeth
+#   get_qc_result_methunmeth
+#   MethUnmethMedianPlot
+# # Control probes - QC
+#   get_qc_data_ctrlprobes
+#   get_qc_result_ctrlprobes
+#   controlProbesGreenRedPlot
+# # Bval density - QC
+#   get_qc_data_bvaldensity
+#   get_qc_result_bvaldensity
+#   bvalDensityPlot
+#
+# --------------------------------------------
 
 
 
@@ -164,8 +193,35 @@ get_qc_result_methunmeth <- function(tblPlot_methUnmeth,
   return(MethUnmethQCresult) 
 }
 
-
-
+# Plot Median Meth/Unmeth signal
+MethUnmethMedianPlot <- function(tblPlot_methUnmeth, 
+                                 badMethUnmethSampleCutoff) {
+  layout(matrix(1:2, ncol=2), width=c(0.7,0.3))
+  par(mar=c(5.1, 4.1, 0.1, 0.1))
+  xy_limits <- c(min(9, min(tblPlot_methUnmeth[,1:2])-1), 
+                 max(14, max(tblPlot_methUnmeth[,1:2])+1) )
+  plot(x=tblPlot_methUnmeth$mMed, 
+       y=tblPlot_methUnmeth$uMed, 
+       col=ifelse(tblPlot_methUnmeth$whichIsBad == "bad", 
+                  "red", "black"),
+       pch=20, 
+       xlab="Meth median intensity (log2)",
+       ylab="Unmeth median intensity (log2)",
+       xlim=xy_limits, ylim=xy_limits
+  ) 
+  abline(a=as.numeric(badMethUnmethSampleCutoff)*2, 
+         b=-1, col="red", lty=2)
+  
+  par(mar=c(5.1, 0.1, 0.1, 0.1))
+  plot.new()
+  legend("top", title = "Quality", 
+         legend = c("good", "bad"), 
+         pch=20,
+         col = c("black","red"), xpd=TRUE)
+  layout(matrix(1, ncol=1))
+  
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+}
 
 
 ############################################
@@ -328,13 +384,6 @@ controlProbesGreenRedPlot <- function(ctl, controlType){
   layout(matrix(1))
   par(mar=c(5.1,4.1,4.1,2.1), oma=c(0,0,0,0))
 }
-
-
-
-
-
-
-
 
 
 ############################################

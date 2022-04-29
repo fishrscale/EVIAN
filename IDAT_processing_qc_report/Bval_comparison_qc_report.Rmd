@@ -1,6 +1,22 @@
 ---
-#entête : comparison of 2 large matrix + format
-
+# --------------------------------------------
+#
+# Bval_comparison_qc_report.Rmd
+# Generate a small QC report about the distribution of 
+#   the 2 beta-values matrix provided.IDAT files provided. 
+# Version 1.0
+# Date: 29 April 2022
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Setup Rmd
+# # Compute bval density
+# # Plot bval density x 2
+#
+# --------------------------------------------
 
 title: "Beta-values comparison - QC report"
 output: 
@@ -16,6 +32,7 @@ params:
   name_bval2: ""
 ---
 
+<!-- 2 HTML tags to define some styles that will be used in this Rmd -->
 <style type="text/css">
 h2 { /* Header 2 */
     font-size: 18px
@@ -25,18 +42,23 @@ h2 { /* Header 2 */
 div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
 </style>
 
+<!-- Setup Rmd -->
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 `r paste0("Date of report: ", Sys.time())`
 
+<!-- Loading libraries and input files (except annotation rds files). Input files are filtered according to provided parameters and prepared in a single format for all the Rmd. -->
+<!-- All the following chunks are embedded into a HTML "details" flag to avoid warnings to be directly visible to the user but still accessible to check that no warning cause the report to be unreliable. -->
 <details>
   <summary>Click here to show warnings</summary>
   <div class = "blue">
   
 ```{r compare_BetaValueDensity, echo=FALSE, message=FALSE, collapse=TRUE}
-#Beta-value density ----------------------------
+###########################################################################
+# Compute Beta-value density ----------------------------
+###########################################################################
 densityList_1 <- lapply( 1:ncol(params$bval1), function(x){
     density(params$bval1[, x], na.rm=TRUE)
   } )
@@ -47,7 +69,9 @@ densityList_2 <- lapply( 1:ncol(params$bval2), function(x){
   } )
 names(densityList_2) <- colnames(params$bval2)
 
+###########################################################################
 #Beta value density plot function
+###########################################################################
 bvalDensityPlot_comparison <- function(densityList_1, densityList_2, 
                                        name_bval1, name_bval2){
   
@@ -88,6 +112,7 @@ bvalDensityPlot_comparison <- function(densityList_1, densityList_2,
   layout(matrix(1))
 }
 
+###########################################################################
 
 ```
 
@@ -100,11 +125,14 @@ bvalDensityPlot_comparison <- function(densityList_1, densityList_2,
    
 
 ```{r bvalDensityComparison, echo=FALSE, fig.height=4.5, fig.width=8.5, results = 'asis'}
+###########################################################################
+# plot bval density comparison
+###########################################################################
 
 bvalDensityPlot_comparison(densityList_1, densityList_2, 
                            params$name_bval1, params$name_bval2)
 
-
+###########################################################################
 ```
      
 

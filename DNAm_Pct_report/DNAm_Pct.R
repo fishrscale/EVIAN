@@ -4,6 +4,7 @@
 # Convert command-line options as R arguments, retrieve absolute paths 
 #   and render the DNAm_Pct_report.Rmd file.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #
@@ -17,6 +18,49 @@
 # # Retrieve absolute paths
 # # Render Rmd
 #
+# --------------------------------------------
+# Options:
+#   -s CHARACTER, --samples_path=CHARACTER
+#   sample file(s) path(s). Paths must be separated by a ','.
+#   
+#   -i CHARACTER, --samples_id_to_check=CHARACTER
+#   sample IDs to keep. IDs must be separated by a ','. If NULL, all samples are kept. [default= NULL]
+#   
+#   -c CHARACTER, --control_path=CHARACTER
+#   control population summary file path.
+#   
+#   -r CHARACTER, --regions_path=CHARACTER
+#   region file(s) path(s). Paths must be separated by a ','.
+#   
+#   -g CHARACTER, --regions_group_to_check=CHARACTER
+#   group of regions to be analyzed. Groups must be separated by a ','. If NULL, all regions are analyzed. [default= NULL]
+#   
+#   -t CHARACTER, --regions_status=CHARACTER
+#   status of regions to be analyzed. Status must be separated by a ','. If NULL, all regions are analyzed. [default= NULL]
+#   
+#   -a CHARACTER, --group_as_ctrls=CHARACTER
+#   group of regions to be used as control regions.Groups must be separated by a ','. Only groups of regions that can be analyzed can be used as control regions (cf regions_group_to_check option). If NULL, no regions are used as control regions. [default= NULL]
+#   
+#   -e CHARACTER, --export_tables_graphs=CHARACTER
+#   If TRUE, graphs and tables are also exported outside the html report. [default= FALSE]
+#   
+#   -d CHARACTER, --outputDir_path=CHARACTER
+#   output directory path [default= .]
+#   
+#   -m CHARACTER, --cpg_positions=CHARACTER
+#   CpG positions (.rds format) file path [default= ./DNAm_Pct_report/annot_rds_files/positions-probesEPIC-hg38.rds]
+#   
+#   -n CHARACTER, --annot_cgi=CHARACTER
+#   Annotation CpG Island (.rds format) file path [default= ./DNAm_Pct_report/annot_rds_files/annotCGI-CpG-Islands-cpgIslandExt.rds]
+#   
+#   -o CHARACTER, --annot_gene=CHARACTER
+#   Annotation genes (.rds format) file path [default= ./DNAm_Pct_report/annot_rds_files/annotGene_NCBI-RefSeq_refGene.rds]
+#   
+#   -p CHARACTER, --annot_repeats=CHARACTER
+#   Annotation repeats (.rds format) file path [default= ./DNAm_Pct_report/annot_rds_files/annotRepeats-RepeatMasker-rmsk.rds]
+#   
+#   -h, --help
+#   Show this help message and exit
 # --------------------------------------------
 
 # Retrieve the script dir ----

@@ -4,6 +4,7 @@
 # Contains the functions (from the DNAm_Pct_report.Rmd) used to 
 #   import and convert the input files.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #

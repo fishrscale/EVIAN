@@ -4,6 +4,7 @@
 # Contains the functions (from the DNAm_Pct_report.Rmd) used to 
 #   generate the boxplot and table about statistics per region.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #
@@ -301,88 +302,6 @@ boxplot_meth_distr_per_region <- function(meth_distr_per_region) {
   layout(matrix(1))
   par(mar = old_mar)
 }
-
-
-
-
-# Check if boxplots should be split, generate the boxplots and if required, 
-#   export the boxplots as pdf files. ----
-# The dataset to provide must have the following format:
-# cpg_id  group           name      group_samples  meth_pct  as_ctrl_region
-# probe1  groupA; groupB  dmrName1  sample1        40.50000  TRUE
-# probe2  groupA; groupC  dmrName1  ctrl           52.05712  TRUE
-# Dependencies: RColorBrewer
-# Input:
-#   meth_distr_per_region - dataset with the cpg id, group, region name,
-#     sample/ctrl associated, methylation %, as_ctrl_region and new_order.
-#     as_ctrl_region: if region is a control region (logical vector).
-#     new_order: combined vector that will be used to determine  the order
-#     of boxes to plot (character vector).
-#   max_nb_regions_per_plot - maximum number or regions per plot
-#   export_tables_graphs - TRUE/FALSE, should graphs be exported as pdf files?
-#   dir_name - path to the output directory
-split_loop_boxplot_meth_distr <- function(meth_pct_distrib_per_region,
-                                          max_nb_regions_per_plot,
-                                          export_tables_graphs,
-                                          dir_name){
-  
-  #If too much regions: re-generate the boxplots and split them.
-  name_regions <- unique(meth_pct_distrib_per_region$name)
-  if (length(name_regions) > max_nb_regions_per_plot) {
-    
-    
-    # Set the order of boxes names to set the order of regions throughout the 
-    #   different boxplots.
-    new_order <-
-      order(paste0(meth_pct_distrib_per_region$as_ctrl_region, ",",
-                   meth_pct_distrib_per_region$name, ",",
-                   as.numeric(meth_pct_distrib_per_region$group_samples)))
-    
-    name_regions <- unique(meth_pct_distrib_per_region$name[new_order])
-    
-    # Set nb of graph to plot.
-    nb_plots <- ceiling( length(name_regions)  / max_nb_regions_per_plot)
-    
-    # Loop: generate (and export if required) each boxplot.
-    for (x in 1:nb_plots ) {
-      
-      # Retrieve names of regions to plot.
-      name_region = name_regions[
-        (1:max_nb_regions_per_plot) + (x - 1) * max_nb_regions_per_plot
-      ]
-      name_region = name_region[!is.na(name_region)]
-      
-      #Generate the boxplots.
-      boxplot_meth_distr_per_region(
-        meth_pct_distrib_per_region[
-          meth_pct_distrib_per_region$name %in% name_region,]
-      )
-      
-      # If required, export the boxplot as a pdf file. ----
-      if (export_tables_graphs) {
-        dev.copy(pdf,
-                 file.path(
-                   dir_name,
-                   paste0("MethPctPlot_perRegion_perSample", 
-                          ifelse(nb_plots==1, "" , paste0("_", x)),
-                          ".pdf")
-                 ),
-                 width = 10, height = 4
-        )
-        tmp_var <- dev.off()
-        rm(tmp_var)
-      }
-    }
-    
-    
-  }
-  
-  
-  
-}
-
-
-
 
 
 

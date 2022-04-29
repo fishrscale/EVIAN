@@ -1,15 +1,79 @@
-# Module 2 in the DNAm analysis
-# Author: Robin Grolaux - rgrolaux@ulb.ac.be
-# Date: 24 June 2020
-##
-# Quality Check of .idat files contained in a folder
-# Outputs QC plots, M/Beta-values and Cell type estimation matrix 
-# Based on minfi-pipeline: http://bioconductor.org/help/course-materials/2015/BioC2015/methylation450k.html#reading-data
-# Args: -r Directory_with_idat_files
-#       -n Normalization_mehtood: funnorm or quantile (cfr. minfi-package)
-#       -s True or False: Remove probes with SNPs at interrogation sites
-#       -o Out_directory
-##
+# --------------------------------------------
+#
+# IDAT_process_and_QC.R
+# Generate IDAT QC reports and process IDAT files  contained in a folder 
+#   to retrieve a beta-value file (and a m-values file if required).
+#    Based on minfi-pipeline: http://bioconductor.org/help/course-materials/2015/BioC2015/methylation450k.html#reading-data
+# Version 1.0
+# Date: 29 April 2022
+# Robin Grolaux, Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Retrieve the script dir
+# # Loading arguments
+# # Print arguments
+# # Get samples names to define html filename
+# # Retrieve absolute paths
+# # Render Rmd
+#
+# --------------------------------------------
+# The available filters:
+# 1- remove probes with high detection p-value (default: FALSE)
+# 2- remove samples with too much probes with high detection p-value (default: TRUE)
+# 3- remove samples with an insufficient Meth/Unmeth signal (default: TRUE)
+# 4- remove probes associated to snps (default: TRUE)
+# 
+# 2 normalization methods are available here:
+# 1- stratified quantile (= "quantile") (default) 
+# 2- funnorm
+# No normalization is performed if only one sample.
+# --------------------------------------------
+# Options:
+#   -i CHARACTER, --idat_dir=CHARACTER
+#   idat directory path.
+#   
+#   -j CHARACTER, --control_path=CHARACTER
+#   control population summary file path (only required for the first bval density if running the qc report).  [default= NULL]
+#   
+#   -t CHARACTER, --truncate_samples_names=CHARACTER
+#   should the sample names be truncated? [default= TRUE]
+#   
+#   -q CHARACTER, --qc_report=CHARACTER
+#   generate qc report before processing idat files? [default= TRUE]
+#   
+#   -p CHARACTER, --remove_probes_highpval=CHARACTER
+#   remove probes with high detection p-value? [default= FALSE]
+#   
+#   -v CHARACTER, --remove_samples_highpval=CHARACTER
+#   remove samples with too much probes with high detection p-value? [default= TRUE]
+#   
+#   -r CHARACTER, --removeSamplesWithBadMethUnmeth=CHARACTER
+#   remove samples with an insufficient Meth/Unmeth signal? [default= TRUE]
+#   
+#   -c CHARACTER, --badMethUnmethSampleCutoff=CHARACTER
+#   insufficient Meth/Unmeth signal limit value to remove samples [default= 10.5]
+#   
+#   -n CHARACTER, --norm_method=CHARACTER
+#   normalization methods between samples provided. Only quantile and funnorm methods are available. No normalization is performed if only one sample is provided. [default= quantile]
+#   
+#   -s CHARACTER, --remove_snip=CHARACTER
+#   remove probes associated to snps? [default= TRUE]
+#   
+#   -m CHARACTER, --get_mval=CHARACTER
+#   also retrieve M-val files? [default= TRUE]
+#   
+#   -o CHARACTER, --out_folder=CHARACTER
+#   output directory path [default= .]
+#   
+#   -b CHARACTER, --output_basename=CHARACTER
+#   output base name [default= output]
+#   
+#   -h, --help
+#   Show this help message and exit
+# --------------------------------------------
 
 # Retrieve the script dir ----
 args <- commandArgs()
@@ -336,5 +400,7 @@ if(parameters$get_mval == TRUE){
                       )
             )
 }
+
+##################################################################
 
 print("IDAT processing finished!")

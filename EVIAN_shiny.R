@@ -3,6 +3,7 @@
 # EVIAN_shiny.R
 # Generate an interface to return command lines and launch additional tools.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #
@@ -662,8 +663,7 @@ server <- function(input,output,session) {
   observeEvent(input$outputDir_path, {  
     rootsV <- c(user_current_directory = userCurrentDir, 
                 DNAm_scripts_directory = dirScript, 
-                home = '~')
-    # @@@ volumes() does not work with this function
+                home = '~') # volumes() does not work within this function
     
     shinyDirChoose(
       input,

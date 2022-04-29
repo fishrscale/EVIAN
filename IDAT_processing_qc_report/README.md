@@ -4,6 +4,18 @@
 
 IDAT_process_and_QC.R generates a HTML QC report about the quality of .idat files provided through the input directory (Illumina Methyl Array technology) and process these .idat files to retrieve the Beta-values (≈ Methylation proportion) and M-values files. It also generates a second small HTML report to check that the beta-value density is improved after filtering/normalization.
 
+The available filters:  
+* remove probes with high detection p-value (default: FALSE)
+* remove samples with too much probes with high detection p-value (default: TRUE)
+* remove samples with an insufficient Meth/Unmeth signal (default: TRUE)
+* remove probes associated to snps (default: TRUE)
+
+2 normalization methods are available here:
+* stratified quantile (= "quantile") (default) 
+* funnorm  
+
+No normalization is performed if only one sample is available.
+
 ## Installation
 
 Follow the instructions on the base *ReadMe.md* to install the EVIAN toolbox and use this script.
@@ -17,7 +29,7 @@ Once you loaded the required dependencies to use this tool, you can either:
 
 ```
 cd ./path/to/EVIAN
-Rscript ./IDAT_processing_qc_report/IDAT_process_and_QC.R --idat_dir=./test_data/idat_files/ --out_folder=./ExampleOfReport/ --output_basename=test_qc_outputs --norm_method=quantile --qc_report=TRUE --control_path=./test_data/Control_population.csv.gz"
+Rscript ./IDAT_processing_qc_report/IDAT_process_and_QC.R --idat_dir=./test_data/idat_files/ --out_folder=./ExampleOfReport/ --output_basename=test_qc_outputs --norm_method=quantile --qc_report=TRUE --control_path=./test_data/Control_population.csv.gz
 ```
 
 **Warning**: the func_*.R and Rmd files must remain in the same directory than the *IDAT_process_and_QC.R* script.

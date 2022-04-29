@@ -5,6 +5,7 @@
 # Generate a report about DNA methylation Percentage distribution
 #   at the global level and in regions of interest defined by the user.
 # Version 1.0
+# Date: 29 April 2022
 # Alexis Hardy
 # ULB 2022
 #
@@ -29,7 +30,7 @@ output:
     toc_collapsed: true
     toc_depth: 3
 params:
-  report_version: 0.8
+  report_version: 1.0
   samples_path: !r file.path('..','test_data','Samples_small.csv.gz')
   samples_id_to_check: 'ZH1609094r1,ZH1712576ms2,ZH2005406k1'
   control_path: !r file.path('..','test_data','Control_population.csv.gz')
@@ -45,8 +46,7 @@ params:
   annot_repeats: !r file.path('annot_rds_files','annotRepeats-RepeatMasker-rmsk.rds')
 ---
 
-<!-- HTML tags to define some styles that can be used in this Rmd -->
-
+<!-- 2 HTML tags to define some styles that will be used in this Rmd -->
 <style type="text/css">
 h2 { /* Header 2 */
     font-size: 18px
@@ -63,53 +63,75 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 <!-- Loading libraries and input files (except annotation rds files). Input files are filtered according to provided parameters and prepared in a single format for all the Rmd. -->
-<!-- All these chunks are embedded into a HTML details flag to avoid warnings to be directly visible to the user but still accessible to check that no warning cause the report to be unreliable. -->
+<!-- All the following chunks are embedded into a HTML "details" flag to avoid warnings to be directly visible to the user but still accessible to check that no warning cause the report to be unreliable. -->
 <details>
   <summary>Click here to show warnings</summary>
   <div class = "blue">
     
 ```{r load_libraries_and_scripts, echo=FALSE, message=FALSE}
-# Import libraries to be used in this Rmd ----
+
+###########################################################################
+# Import libraries to be used in this Rmd
+###########################################################################
 library(reshape2) # for melt/dcast functions
 library(RColorBrewer) # for brewer.pal function (boxplots/profile palettes)
 library(kableExtra) # for kable and associated functions
 library(GenomicRanges) # for data manipulation in GRanges format
 
-# Load R scripts ----
+###########################################################################
+# Load R scripts
+###########################################################################
 source("func_import_and_format_inputs.R")
 source("func_analysis_global.R")
 source("func_analysis_per_region.R")
 source("func_profile_region.R")
 
+###########################################################################
+
 ```
 ```{r samples_loading, echo=FALSE}
 
-#retrieve samples id to keep
+###########################################################################
+# Retrieve samples id to keep
+###########################################################################
 samples_to_keep <- NULL
 if (!is.null(params$samples_id_to_check)) {
   samples_to_keep <- unlist(strsplit(params$samples_id_to_check, ","))
 }
 
-#import, concatenate, check and convert samples
+###########################################################################
+# Import, concatenate, check and convert samples
+###########################################################################
 sample_meth <- 
   import_meth_samples(paths = 
                         unlist(strsplit(params$samples_path, split = ",")),
                       filter_sample_id = samples_to_keep,
                       convert_to_pct = TRUE)
+
+###########################################################################
+
 ```
 ```{r control_loading, echo=FALSE}
 
-#import and convert control population stat summary file
+###########################################################################
+# Import and convert control population stat summary file
+###########################################################################
 control_meth <- 
   import_meth_control(path = params$control_path,
                       convert_to_pct = TRUE)
 
+###########################################################################
+
 ```
 ```{r loading_annotation, echo=FALSE, message=FALSE}
-# Import cpg positions annotation file ----
+###########################################################################
+# Import cpg positions annotation file
+###########################################################################
 positions <- readRDS(params$cpg_positions)
 
-# Import gene list from the rds file ----
+###########################################################################
+# Import gene list from the rds file
+###########################################################################
 annot_gene_list <- readRDS(params$annot_gene)
 annot_gene_list$chr <- annot_gene_list$chrom
 annot_gene_list$start <- annot_gene_list$txStart
@@ -120,28 +142,43 @@ annot_gene_list$gene_name <- paste(annot_gene_list$name2,
   sep = " - "
 )
 
-# Import CGI list from the rds file ----
+###########################################################################
+# Import CGI list from the rds file
+###########################################################################
 annot_cgi_list <- readRDS(params$annot_cgi)
 annot_cgi_list$chr <- annot_cgi_list$chrom
 annot_cgi_list$start <- annot_cgi_list$chromStart
 annot_cgi_list$end <- annot_cgi_list$chromEnd
 
-# Import repeats list from the rds file ----
+###########################################################################
+# Import repeats list from the rds file
+###########################################################################
 annot_repeats_list <- readRDS(params$annot_repeats)
 annot_repeats_list$chr <- annot_repeats_list$genoName
 annot_repeats_list$start <- annot_repeats_list$genoStart
 annot_repeats_list$end <- annot_repeats_list$genoEnd
+
+###########################################################################
+
 ```
 ```{r regions_loading, echo=FALSE}
 
+###########################################################################
+# Import all input regions
+###########################################################################
 regions_all <- import_all_regions(
   paths = unlist(strsplit(params$regions_path, split = ",")) 
 )
 
+###########################################################################
+
+
 ```
 ```{r prepare_regions_to_be_analyzed, echo=FALSE}
 
-#retrieve status and groups to be used for the analysis
+###########################################################################
+# retrieve status and groups to be used for the analysis
+###########################################################################
 regions_status <- NULL
 if (!is.null(params$regions_status)) {
   regions_status <- unlist(strsplit(params$regions_status, ","))
@@ -151,27 +188,30 @@ if (!is.null(params$regions_group_to_check)) {
   regions_group_to_check <- unlist(strsplit(params$regions_group_to_check, ","))
 }
 
-# ----
+###########################################################################
 # Filter groups and status to be used for the analysis (if the corresponding
 #   parameters are used). The rest of the regions is still accessible
 #   (via the initial dataset) for the groups in the table per region and in
-#   the annotation of profile plots ----
+#   the annotation of profile plots
+###########################################################################
 regions_to_analyze <- prepare_regions_to_analyze(regions_all, 
                                                  regions_status,
                                                  regions_group_to_check)
 
-```
-```{r retrieve_probes_per_region, echo=FALSE}
-# ----
+###########################################################################
 # Retrieve and check the cpg id for the regions to be analyzed. This step speed up the
-#   retrieval of cpgs positions and id in many functions from the Rmd. ----
+#   retrieval of cpgs positions and id in many functions from the Rmd.
+###########################################################################
 regions_to_analyze <- get_regions_with_probes(regions_to_analyze, positions)
+
+###########################################################################
 
 ```
 ```{r prepare_export, echo=FALSE}
-# ----
+###########################################################################
 # If required, prepare the directory/sub-directories for the exportation of
-#   graphs and plots. ----
+#   graphs and plots.
+###########################################################################
 if (params$export_tables_graphs) {
   dir_name <- file.path(
     params$outputDir_path,
@@ -184,6 +224,9 @@ if (params$export_tables_graphs) {
   dir.create(file.path(dir_name, "MethPctPlot_wholeGenome"))
   dir.create(file.path(dir_name, "MethPctPlot_perRegion"))
 }
+
+###########################################################################
+
 ```
 
   </div>
@@ -193,9 +236,11 @@ if (params$export_tables_graphs) {
 
 <!-- Generate, export and print the dataframe with the general information about the analysis -->
 ```{r table_infos_generate_export_print, echo=FALSE, results = 'asis'}
-# ----
+
+###########################################################################
 # Generate the dataframe with the general information about the analysis.
-#   Regions must have a column with probes id. ----
+#   Regions must have a column with probes id.
+###########################################################################
 info_dataframe <- generate_info_dataframe(
   sample_meth, regions_to_analyze,
   params$report_version,
@@ -203,7 +248,9 @@ info_dataframe <- generate_info_dataframe(
   params$group_as_ctrls
 )
 
+###########################################################################
 # If required, export (as a csv file) the dataframe with the general information about the analysis 
+###########################################################################
 if (params$export_tables_graphs) {
   write.csv(info_dataframe,
     file = file.path(dir_name, "generalInfoTable.csv"),
@@ -211,11 +258,14 @@ if (params$export_tables_graphs) {
   )
 }
 
+###########################################################################
 # Print the dataframe with the general information about the analysis. 
 #   The table is printed via 3 tables to allow multiple columns. 
+###########################################################################
 tables_print <- print_info_dataframe(info_dataframe)
 for (x in 1:length(tables_print)) { print( tables_print[[x]] ) }
 
+###########################################################################
 
 ```
 
@@ -226,14 +276,17 @@ for (x in 1:length(tables_print)) { print( tables_print[[x]] ) }
 # Methylation Percentage difference distribution per sample  
 ```{r manhattanPlot_meth_pctDiff, echo=FALSE, fig.height=4, fig.width=10, results = 'asis', message=FALSE}
 
+###########################################################################
 # Check that inputs can be ordered together + prepare them to generate the manhattan plots.
+###########################################################################
 list_manhattan_plot <-
   get_list_for_manhanttan_plot(sample_meth, control_meth, positions)
 
-# ----
+###########################################################################
 # If the order of probes id between sample, control and cpg position datasets
 #   is correct, plot a manhattan plot for each sample inside a new sub-section
-#   and, if required, export it as a pdf. ----
+#   and, if required, export it as a pdf.
+###########################################################################
 if (!is.null(list_manhattan_plot)) {
   sample_methdiff_subset <- list_manhattan_plot$sample_methdiff_subset
   labels_pos <- list_manhattan_plot$labels_pos
@@ -282,6 +335,8 @@ if (!is.null(list_manhattan_plot)) {
 }
 rm(list_manhattan_plot)
 
+###########################################################################
+
 ```
   
   
@@ -292,37 +347,68 @@ rm(list_manhattan_plot)
 # Methylation Percentage per region per sample  
 ```{r boxplot_meth_pct_prepare_plot_and_export, fig.height=4, fig.width=10, echo=FALSE, message=FALSE}
 
+###########################################################################
 # Generate the dataframe to be used for the boxplots and order it to place control regions on the right.
+###########################################################################
 meth_pct_distrib_per_region <-
   combine_datasets_for_boxplot(regions_to_analyze, sample_meth,
                                control_meth, params$group_as_ctrls)
 
-# #Generate the boxplots.
-# boxplot_meth_distr_per_region(meth_pct_distrib_per_region)
-# 
-# # If required, export the boxplot as a pdf file. ----
-# if (params$export_tables_graphs) {
-#   dev.copy(pdf,
-#     file.path(
-#       dir_name,
-#       "MethPctPlot_perRegion_perSample.pdf"
-#     ),
-#     width = 10, height = 4
-#   )
-#   tmp_var <- dev.off()
-#   rm(tmp_var)
-# }
-
-
+###########################################################################
 # Check if boxplots should be split, generate the boxplots and if required, 
-#   export the boxplots as pdf files. ----
-split_loop_boxplot_meth_distr(
-  meth_pct_distrib_per_region,
-  max_nb_regions_per_plot = 10, 
-  export_tables_graphs = params$export_tables_graphs,
-  dir_name
-  )
+#   export the boxplots as pdf files.
+###########################################################################
 
+#set the maximum number of regions to plot per boxplot
+max_nb_regions_per_plot <- 10
+
+#Retrieve the names of regions for the boxplot(s)
+name_regions <- unique(meth_pct_distrib_per_region$name)
+    
+# Set the order of boxes names to set the order of regions throughout the 
+#   different boxplots. (in case the boxplot must be split)
+new_order <-
+  order(paste0(meth_pct_distrib_per_region$as_ctrl_region, ",",
+               meth_pct_distrib_per_region$name, ",",
+               as.numeric(meth_pct_distrib_per_region$group_samples)))
+
+name_regions <- unique(meth_pct_distrib_per_region$name[new_order])
+
+# Compute the nb of graphs to plot.
+nb_plots <- ceiling( length(name_regions)  / max_nb_regions_per_plot)
+
+# Loop: generate (and export if required) each boxplot.
+for (x in 1:nb_plots ) {
+  
+  # Retrieve names of regions to plot.
+  name_region = name_regions[
+    (1:max_nb_regions_per_plot) + (x - 1) * max_nb_regions_per_plot
+  ]
+  name_region = name_region[!is.na(name_region)]
+  
+  #Generate the boxplots for subsets if necessary.
+  boxplot_meth_distr_per_region(
+    meth_pct_distrib_per_region[
+      meth_pct_distrib_per_region$name %in% name_region,]
+  )
+  
+  # If required, export the boxplot as a pdf file. ----
+  if (params$export_tables_graphs) {
+    dev.copy(pdf,
+             file.path(
+               dir_name,
+               paste0("MethPctPlot_perRegion_perSample", 
+                      ifelse(nb_plots==1, "" , paste0("_", x)),
+                      ".pdf")
+             ),
+             width = 10, height = 4
+    )
+    tmp_var <- dev.off()
+    rm(tmp_var)
+  }
+}
+
+###########################################################################
 
 ```
 
@@ -330,15 +416,20 @@ split_loop_boxplot_meth_distr(
 
 ***  
 # Methylation Percentage difference per region  
-<!-- Generate and print a dataframe with median data per region. -->
-```{r methdifftable_generate_and_print, echo=FALSE, results = 'asis'}
-# Get a dataframe with median methylation % difference per region. ----
+<!-- Generate and print (and export if required) a dataframe with median data per region. -->
+```{r methdifftable_generate_print_export, echo=FALSE, results = 'asis'}
+
+###########################################################################
+# Get a dataframe with median methylation % difference per region.
+###########################################################################
 regions_with_methpct <- get_region_median_diff_dataset(
   regions_to_analyze, regions_all,
   sample_meth, control_meth
 )
 
-# Retrieve index of regions to be considered as control regions ----
+###########################################################################
+# Retrieve index of regions to be considered as control regions
+###########################################################################
 index_control_regions <-
   sapply(regions_with_methpct$region_name, function(x) {
     groups_vec <- regions_to_analyze[regions_to_analyze$name == x, "group"]
@@ -349,21 +440,26 @@ index_control_regions <-
   })
 index_control_regions <- which(index_control_regions)
 
-# Print the dataframe with median methylation % difference per region.----
+###########################################################################
+# Print the dataframe with median methylation % difference per region.
+###########################################################################
 print_methdiff_formatted_table(regions_with_methpct,
   name_samples = colnames(sample_meth),
   params$regions_group_to_check, index_control_regions
 )
-```
-<!-- If necessary, export the dataframe with mean data per region. -->
-```{r methdifftable_export, echo=FALSE}
-# export table?----
+
+###########################################################################
+# If necessary, export the dataframe with mean data per region.
+###########################################################################
 if (params$export_tables_graphs) {
   write.csv(regions_with_methpct,
     file = file.path(dir_name, "MethPctDifference_perRegion_Table.csv"),
     quote = TRUE, row.names = FALSE
   )
 }
+
+###########################################################################
+
 ```
 
 <br>
@@ -373,97 +469,13 @@ if (params$export_tables_graphs) {
 # Methylation Percentage profiles
 <!-- Loop to generate a profile plot for each selected region inside a new sub-section and, if required, directly export each plot as a pdf file. -->
 ```{r profile_plots_and_export, echo=FALSE, fig.height=8, fig.width=10, results = 'asis', message=FALSE}
-# ----
+###########################################################################
 # Loop for each region: plot a profile plot for each region inside a new
 #   sub-section and, if required, export it as a pdf.
 # For each region, the coordinates are used to subset the sample and control
 #   datasets, then these datasets are used with the annotation to plot the
-#   profile. The subset is also made on the different annotation datasets. ----
-name_regions <- regions_to_analyze$name[
-  order(regions_to_analyze$name, regions_to_analyze$group)]
-for (name_region in name_regions) {
-
-  # print sample name with "## " tag to print a sub-section
-  cat(paste("##", name_region, "\n", sep = " "))
-  flush.console()
-
-
-
-  # Retrieve coordinates ----
-  chr_vec <- regions_to_analyze[regions_to_analyze$name == name_region, "chr"]
-  start_vec <-
-    regions_to_analyze[regions_to_analyze$name == name_region, "start"] - 1000
-  end_vec <-
-    regions_to_analyze[regions_to_analyze$name == name_region, "end"] + 1000
-
-  # Subset all datasets based on current region ----
-  region_data <- get_datalist_based_on_region(
-    sample_meth, control_meth, positions,
-    annot_gene_list, annot_cgi_list,
-    annot_repeats_list, regions_all,
-    chr_vec, start_vec, end_vec
-  )
-
-  
-  # Limit the number of genes on the gene panel: the rest is condensed in a 
-  #   coverage line and their name is exported below the plot and, if export 
-  #   is required, in a gene table associated to the graph output
-  region_data$gene 
-  
-  
-  # Profile plot function ----
-  plot_region_profile(
-    region_data$sample, region_data$control,
-    chr_vec, start_vec, end_vec,
-    region_data$gene, region_data$cgi,
-    region_data$repeats, region_data$regions_to_plot
-  )
-
-
-  # If required, export the profile plot ----
-  if (params$export_tables_graphs) {
-    name_region_corrected <-
-      gsub(
-        pattern = ":|/| |\`|\'|\"|\\(|\\)|\\[|\\]|\\{|\\}",
-        replacement = "-",
-        x = name_region
-      )
-    dev.copy(pdf,
-      file.path(
-        dir_name,
-        "MethPctPlot_perRegion",
-        paste0("MethPctPlot_", name_region_corrected, ".pdf")
-      ),
-      width = 10, height = 6
-    )
-    tmp_var <- dev.off()
-    rm(tmp_var)
-  }
-
-
-  # ----
-  # print "pagebreaks" and "\n" to avoid potential issues with the
-  #   sub-section ----
-  cat("\n\n\\pagebreak\n")
-  flush.console()
-  
-  rm(list = c("region_data", "chr_vec", "start_vec", "end_vec"))
-}
-```
-
-***
-
-
-
-# Methylation Percentage profiles 2
-<!-- Loop to generate a profile plot for each selected region inside a new sub-section and, if required, directly export each plot as a pdf file. -->
-```{r profile_plots_and_export2, echo=FALSE, fig.height=8, fig.width=10, results = 'asis', message=FALSE}
-# ----
-# Loop for each region: plot a profile plot for each region inside a new
-#   sub-section and, if required, export it as a pdf.
-# For each region, the coordinates are used to subset the sample and control
-#   datasets, then these datasets are used with the annotation to plot the
-#   profile. The subset is also made on the different annotation datasets. ----
+#   profile. The subset is also made on the different annotation datasets.
+###########################################################################
 name_regions <- regions_to_analyze$name[
   order(regions_to_analyze$name, regions_to_analyze$group)]
 for (name_region in name_regions) {
@@ -570,6 +582,7 @@ for (name_region in name_regions) {
   rm(list = c("region_data", "chr_vec", "start_vec", "end_vec"))
 }
 
+###########################################################################
 
 ```
 

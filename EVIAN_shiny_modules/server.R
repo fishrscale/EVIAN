@@ -21,6 +21,10 @@
 # Define server to associate to the ui ----
 server <- function(input,output,session) {
   
+  
+  ################
+  # Tab DNAm Pct report
+  ################
   #Input retrieve and check file paths ----
   volumes = getVolumes()
   value_samples_path <- reactiveVal("")
@@ -410,6 +414,8 @@ server <- function(input,output,session) {
   
   
   # ----
+  
+  
 }
 
 # ----
