@@ -1,116 +1,161 @@
+# --------------------------------------------
+#
+# Generate_RDS_files.R
+# Retrieve/download input files and save them as RDS files.
+# Version 1.0
+# Date: 29 April 2022
+# Alexis Hardy
+# ULB 2022
+#
+# --------------------------------------------
+#
+# Steps:
+# # Loading arguments
+# # Load Library
+# # Generate RDS positions
+# # Load UCSC session to retrieve data
+# # Generate RDS genes
+# # Generate RDS CGI
+# # Generate RDS Repeats
+#
+# --------------------------------------------
+# Options:
+#   -c CHARACTER, --rds_cpg_pos=CHARACTER
+#   If TRUE, generate the rds file for cpg position annotation. The path of cpg_positions csv file must be provided. [default= TRUE]
+#   
+#   -p CHARACTER, --cpg_positions_path=CHARACTER
+#   CpG positions (.csv format) file path. [default= NULL]
+#   
+#   -g CHARACTER, --rds_genes=CHARACTER
+#   If TRUE, generate the rds file for genes annotation. [default= TRUE]
+#   
+#   -i CHARACTER, --rds_cgi=CHARACTER
+#   If TRUE, generate the rds file for CpG Islands annotation. [default= TRUE]
+#   
+#   -r CHARACTER, --rds_repeats=CHARACTER
+#   If TRUE, generate the rds file for repeats annotation. [default= TRUE]
+#   
+#   -v CHARACTER, --genome_version=CHARACTER
+#   Genome version to import for genes/cgi/repeats rds files generation [default= hg38]
+#   
+#   -o CHARACTER, --output_dir=CHARACTER
+#   Output directory for the different rds files generated. [default= .]
+#   
+#   -h, --help
+#   Show this help message and exit
+# --------------------------------------------
+
+###########################################################################
+#Loading arguments
+###########################################################################
+library(optparse)
+option_list = list(
+  make_option(c("-c", "--rds_cpg_pos"), type="character", default="TRUE",
+              help=paste0("If TRUE, generate the rds file for cpg position annotation.",
+                          " The path of cpg_positions csv file must be provided. [default= %default]"), 
+              metavar="character"),
+  make_option(c("-p", "--cpg_positions_path"), type="character", default=NULL,
+              help="CpG positions (.csv format) file path. [default= %default]", 
+              metavar="character"),
+  make_option(c("-g", "--rds_genes"), type="character", default="TRUE",
+              help=paste0("If TRUE, generate the rds file for genes annotation.",
+                          " [default= %default]"), 
+              metavar="character"),
+  make_option(c("-i", "--rds_cgi"), type="character", default="TRUE",
+              help=paste0("If TRUE, generate the rds file for CpG Islands annotation.",
+                          " [default= %default]"), 
+              metavar="character"),
+  make_option(c("-r", "--rds_repeats"), type="character", default="TRUE",
+              help=paste0("If TRUE, generate the rds file for repeats annotation.",
+                          " [default= %default]"), 
+              metavar="character"),
+  make_option(c("-v", "--genome_version"), type="character", default="hg38",
+              help=paste0("Genome version to import for genes/cgi/repeats rds files generation",
+                          " [default= %default]"), 
+              metavar="character"),
+  make_option(c("-o", "--output_dir"), type="character", default=".",
+              help=paste0("Output directory for the different rds files generated.",
+                          " [default= %default]"), 
+              metavar="character")
+)
+
+opt_parser = OptionParser(option_list=option_list)
+parameters = parse_args(opt_parser)
 
 
-cpg_positions_path <- './CpGs_position_v2.csv'
-track ucsc names...
-options ...
-...elt()
+###########################################################################
+#Load Library
+###########################################################################
 library(rtracklayer)
 
 
 ###########################################################################
 #Generate RDS positions
 ###########################################################################
-positions <- read.csv(params$cpg_positions, row.names = 1, header = TRUE)
-colnames(positions) <- c("chr", "start", "strand")
-saveRDS(positions, file = "./ExampleOfReport/test_positions-probesEPIC-hg38.rds")
-
+if(parameters$rds_cpg_pos == TRUE){
+  positions <- read.csv(parameters$cpg_positions_path, row.names = 1, header = TRUE)
+  colnames(positions) <- c("chr", "start", "strand")
+  saveRDS(positions, file = file.path(parameters$output_dir, 
+                                      "test_positions-probesEPIC-hg38.rds"))
+}
 
 ###########################################################################
 #Load UCSC session to retrieve data (requires internet connexion)
 ###########################################################################
 session <- browserSession()
-genome(session) <- "hg38"
+genome(session) <- parameters$genome_version
 
 
 ###########################################################################
 #Generate RDS genes
 ###########################################################################
-query <- ucscTableQuery(session, track="NCBI RefSeq",
-                        table="refGene")
-annot_gene_list <- getTable(query)
-saveRDS(annot_gene_list, file = "./ExampleOfReport/test_annotGene_NCBI-RefSeq_refGene.rds")
-
-
+if(parameters$rds_genes == TRUE){
+  query <- ucscTableQuery(session, track="NCBI RefSeq",
+                          table="refGene")
+  annot_gene_list <- getTable(query)
+  saveRDS(annot_gene_list, file = file.path(parameters$output_dir, 
+                                            "test_annotGene_NCBI-RefSeq_refGene.rds"))
+}
 
 ###########################################################################
 #Generate RDS CGI
 ###########################################################################
-query <- ucscTableQuery(session, track="CpG Islands",
-                        table="cpgIslandExt")
-annot_CGI_list <- getTable(query)
-saveRDS(annot_CGI_list, file = "./ExampleOfReport/annotCGI-CpG-Islands-cpgIslandExt.rds")
-
+if(parameters$rds_cgi == TRUE){
+  query <- ucscTableQuery(session, track="CpG Islands",
+                          table="cpgIslandExt")
+  annot_CGI_list <- getTable(query)
+  saveRDS(annot_CGI_list, file = file.path(parameters$output_dir, 
+                                           "test_annotCGI-CpG-Islands-cpgIslandExt.rds"))
+  
+}
 
 ###########################################################################
 #Generate RDS Repeats
 ###########################################################################
-#Too many requests if directly using the following commands:
-# query <- ucscTableQuery(session, track="RepeatMasker",
-#                         table="rmsk")
-# annot_repeats_list <- getTable(query)
-# saveRDS(annot_repeats_list, file = "./ExampleOfReport/annotRepeats-RepeatMasker-rmsk.rds")
-#so a fractionned loop is necessary:
+if(parameters$rds_repeats == TRUE){
+  #Too many requests if directly using the following commands:
+  # query <- ucscTableQuery(session, track="RepeatMasker",
+  #                         table="rmsk")
+  # annot_repeats_list <- getTable(query)
+  # saveRDS(annot_CGI_list, file = file.path(parameters$output_dir, 
+  #                                          "test_annotRepeats-RepeatMasker-rmsk.rds"))
 
-
-query <- ucscTableQuery(session, track="RepeatMasker",
-                        table="rmsk")
-chrSizes <- query@range
-
-#get data chr by chr
-annot_repeats_list <- lapply(1:length(chrSizes), function(x){
-  print(as.character(chrSizes[x]@seqnames))
-  query <- ucscTableQuery(session, track="RepeatMasker",
-                        range=chrSizes[x],
-                        table="rmsk")
-  annot_repeats <- getTable(query)
-  return(annot_repeats)
-})
-annot_repeats_list <- do.call("rbind", annot_repeats_list)
-
-#filter to reduce file size?
-annot_repeats_list <- unique(annot_repeats_list)
-saveRDS(annot_repeats_list, file = "./ExampleOfReport/annotRepeats-RepeatMasker-rmsk.rds")
-
-
-# annot_repeats_list <- lapply(1:nrow(chrSizes), function(x){
-#   print(x)
-#   query <- ucscTableQuery(session, track="RepeatMasker",
-#                         range=as(chrSizes, "GRanges")[x],
-#                         table="rmsk")
-#   annot_repeats <- getTable(query)
-#   return(annot_repeats)
-# })
-# annot_repeats_list <- do.call("rbind", annot_repeats_list)
-
-
-# annot_repeats_list <- read.table(file = "chrMainOnly_repeats_hg38.tsv", header=TRUE, sep="\t")
-# annot_repeats_list <-
-# annot_repeats_list[,c("genoName",
-#   "genoStart",
-#   "genoEnd",
-#   "strand",
-#   "repClass")]
-# saveRDS(annot_repeats_list, file = "annotRepeats.rds")
-
-# annot_repeats_list <- lapply(1:nrow(regions), function(x){
-#   query <- ucscTableQuery(session, track="RepeatMasker",
-#                         range=as(regions, "GRanges")[x],
-#                         table="rmsk")
-#   annot_repeats <- getTable(query)
-#   return(annot_repeats)
-# })
-# annot_repeats_list <- do.call("rbind", annot_repeats_list)
-# if(nrow(annot_repeats_list) == 0){
-#   annot_repeats_list <- data.frame(
-#     "bin"=NA, "swScore"=NA,
-#     "milliDiv"=NA, "milliDel"=NA, "milliIns"=NA,
-#     "genoName"=NA, "genoStart"=NA, "genoEnd"=NA,
-#     "genoLeft"=NA, "strand"=NA,
-#     "repName"=NA, "repClass"=NA, "repFamily"=NA,
-#     "repStart"=NA, "repEnd"=NA, "repLeft"=NA, "id"=NA
-#   )
-# }
-# annot_repeats_list <- unique(annot_repeats_list)
-annot_repeats_list <- readRDS("./annotRepeats.rds")
-
-
+  #Alternative:
+  #Download rmsk.txt.gz
+  system(paste0("wget -O rmsk.txt.gz https://hgdownload.soe.ucsc.edu/goldenPath/",
+                parameters$genome_version,
+                "/database/rmsk.txt.gz"))
+  
+  # Open rmsk.txt.gz file and save annot_repeats RDS -------------------------------
+  annot_CGI_list <- read.table("rmsk.txt.gz", row.names = NULL, 
+                               header = FALSE, sep = "\t")
+  colnames(annot_CGI_list) <- c("bin", "swScore", "milliDiv", "milliDel", "milliIns", 
+                                "genoName", "genoStart", "genoEnd", "genoLeft", "strand",
+                                "repName", "repClass", "repFamily", 
+                                "repStart", "repEnd", "repLeft","id")
+  
+  saveRDS(annot_CGI_list, file = file.path(parameters$output_dir, 
+                                           "test_annotRepeats-RepeatMasker-rmsk.rds"))
+  system("rm rmsk.txt.gz")
+  
+}

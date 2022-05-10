@@ -67,7 +67,18 @@
 args <- commandArgs()
 dirScript <- dirname(gsub(args[ grep(args, pattern = "--file") ],
                           pattern = "--file=", replacement = ""))
-if(length(dirScript)==0){ dirScript="." }
+if(length(dirScript)==0){ 
+  if(rstudioapi::isAvailable()){
+    dirScript = normalizePath(
+      file.path(dirname(rstudioapi::getSourceEditorContext()$path), "..")
+    )
+  } else {
+    warning("Could not determine script directory. 
+            Setting current directory as script directory.
+            This could create issues.")
+    dirScript="." 
+  }
+}
 
 # Loading arguments----
 library(optparse)

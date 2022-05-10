@@ -18,7 +18,7 @@ Each script can be directly launched in command-lines: look at the *ReadMe.md* f
 * Open your terminal window (Mac, Linux) or anaconda prompt (Windows) and launch the following command to install a new conda environment for the EVIAN toolbox:
 
 ```
-conda create -n EVIAN_env -c conda-forge -c bioconda r r-essentials r-rmarkdown pandoc r-kableextra bioconductor-rtracklayer r-rcolorbrewer r-reshape2 r-shiny r-shinyfiles r-shinywidgets r-waiter r-optparse
+conda create -n EVIAN_env -c conda-forge -c r -c bioconda r r-essentials r-rmarkdown pandoc r-kableextra bioconductor-rtracklayer r-rcolorbrewer r-reshape2 r-shiny r-shinyfiles r-shinywidgets r-waiter r-optparse r-shinydashboard bioconductor-minfi bioconductor-illuminahumanmethylationepicmanifest bioconductor-illuminahumanmethylation450kmanifest r-biocmanager
 ```
 
 * Once the installation is complete, activate the environment previously generated to load the required dependencies before using any script from the toolbox:
@@ -39,19 +39,10 @@ Here is detailed the steps to use the shiny interface *EVIAN_shiny.R*.
 Rscript ./path/to/EVIAN_shiny.R
 ```
 
-* Each tab on the left corresponds to one of the available tool: select the one that you want to use.
-
-@@@To complete with a screenshot modified
-
-* Follow the required instructions, select the files and conditions you want to use for the analysis.
-
-@@@To complete with a screenshot modified
-
-* Once you finished completing the conditions you wanted to use, click on the "Generate report" or "Launch analysis" button at the bottom of the page.
-
-@@@To complete with a screenshot modified
-
-* A command-line will be generated and launched: the progress can be followed on the terminal window.
+* Each tab on the left corresponds to one of the available tool: select the one that you want to use.  
+* Follow the required instructions, select the files and conditions you want to use for the analysis.  
+* Once you finished completing the conditions you wanted to use, click on the "Generate report" or "Launch analysis" button at the bottom of the page.  
+* A command-line will be generated and launched: the progress can be followed on the terminal window.  
 
 ## Regions dataset description
 
@@ -85,9 +76,9 @@ It is also possible to have multiple groups associated to one region:
 
 ## Citation/Work/Contact
 
-@@@To complete
+...
 
 ## Licence
 
-@@@To complete
+...
 

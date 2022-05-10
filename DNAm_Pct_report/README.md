@@ -69,11 +69,22 @@ The name of report is automatically based on the samples provided unless the rep
 
 A maximum of 10 samples can be analyzed with this report and each sample id must be unique.
 
+## RDS annotation file generation
+
+This directory also contain the *Generate_RDS_files.R* script that generates the default annotation RDS files.
+
+Once you loaded the required dependencies to use this tool, you can launch the *Generate_RDS_files.R* script (-h or --help to see each option available) that will re-generate the RDS annotation files:
+
+```
+cd ./path/to/EVIAN
+Rscript ./DNAm_Pct_report/Generate_RDS_files.R --rds_cpg_pos=TRUE --cpg_positions_path="./test_data/rds_generation_input_files/CpGs_position_Illumina_EPIC_hg38.csv" --rds_genes=TRUE --rds_cgi=TRUE --rds_repeats=TRUE --genome_version="hg38" --output_dir="./ExampleOfReport/"
+```
+
 ## Citation/Work/Contact
 
-@@@To complete
+...
 
 ## Licence
 
-@@@To complete
+...
 

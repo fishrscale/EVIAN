@@ -302,10 +302,6 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
         y1 = 0.5,
         lwd = 3, col = "green"
       )
-      
-      box(bty = "o", col = "black")
-      box(bty = "]", col = "white")
-      box(bty = "7", col = "black")
     }
   }
   panel_cgi_legend <- function() {
@@ -324,7 +320,7 @@ plot_region_profile <- function(sample_meth_subset_with_pos,
       x = c(start_vec, end_vec),
       y = c(0, 1),
       xaxt = "n", xlab = "",
-      yaxt = "n", ylab = "", pch = "", bty = "u"
+      yaxt = "n", ylab = "", pch = ""
     )
     
     if (nrow(annot_repeats) > 0) {

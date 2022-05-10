@@ -86,9 +86,9 @@ Options:
 
 ## Citation/Work/Contact
 
-@@@To complete
+...
 
 ## Licence
 
-@@@To complete
+...
 
